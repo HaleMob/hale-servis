@@ -913,6 +913,7 @@
             <div class="field-4"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" /></div>
             <div class="field-4"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
             <div class="field-4"><label>Şube</label><select id="nBranch"></select></div>
+            <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
             <div class="field-4"><label>Sorumlu personel</label><input id="nResponsible" /></div>
             <div class="field-4"><label>Öncelik</label><select id="nPriority"></select></div>
             <div class="field-4"><label>Durum</label><select id="nStatus"></select></div>
@@ -1016,6 +1017,7 @@
       <div class="field-4"><label>Müşteri</label><input id="eCustomer" /></div>
       <div class="field-4"><label>Telefon</label><input id="ePhone" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
       <div class="field-4"><label>Şube</label><select id="eBranch"></select></div>
+      <div class="field-12"><label>Adres</label><textarea id="eAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
 
       <div class="field-4"><label>Hale Servis No</label><input id="eOrderNo" /></div>
       <div class="field-4"><label>FIORI Bildirim No</label><input id="eFioriNo" placeholder="FIORI bildirim no" /></div>
@@ -1381,6 +1383,7 @@ function makeRecord(input) {
     updatedAt: input.updatedAt || new Date().toISOString(),
     customer: input.customer || '',
     phone: input.phone || '',
+    address: input.address || '',
     branch: input.branch || '',
     salesPerson: input.salesPerson || '',
     responsible: input.responsible || '',
@@ -1561,7 +1564,7 @@ function renderRecords() {
 
   if (q) {
     list = list.filter(r => [
-      r.customer, r.phone, r.branch, r.salesPerson, r.responsible,
+      r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
       r.productName, r.productCode, r.materialCode, r.orderNo, r.problem,
       r.note, r.status, r.priority, getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.problem].join(' ')).join(' ')
     ].join(' ').toLowerCase().includes(q));
@@ -1636,8 +1639,9 @@ function recordCard(r) {
         <div><div class="k">Satış danışmanı</div><div class="v">${esc(r.salesPerson || '—')}</div></div>
         <div><div class="k">Hale Servis No</div><div class="v">${esc(r.orderNo || '—')}</div></div>
         <div><div class="k">FIORI Bildirim No</div><div class="v">${esc(r.fioriNo || '—')}</div></div>
-        <div><div class="k">Ürün kurulum tarihi</div><div class="v">${esc(r.shipmentDate || '—')}</div></div>
+        <div><div class="k">Ürün kurulum tarihi</div><div class="v">${esc(formatDate(r.shipmentDate) || '—')}</div></div>
         <div><div class="k">Açık gün</div><div class="v">${r.openClosed === 'Kapalı' ? 'Kapalı' : ageDays(r.createdAt) + ' gün'}</div></div>
+        ${r.address ? `<div style="grid-column:1/-1;"><div class="k">Adres</div><div class="v" style="white-space:pre-wrap;">${esc(r.address)}</div></div>` : ''}
       </div>
 
       <div class="actions">
@@ -1857,6 +1861,7 @@ async function createRecord() {
   const record = makeRecord({
     customer,
     phone: normalizePhoneDisplay(getVal('nPhone')),
+    address: getVal('nAddress'),
     branch: normalizeBranchName(getVal('nBranch')),
     salesPerson: getVal('nResponsible'),
     responsible: getVal('nResponsible'),
@@ -1881,7 +1886,7 @@ async function createRecord() {
 
 function clearNewForm(showToast = true) {
   [
-    'nCustomer','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote',
+    'nCustomer','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
   state.newItems = [];
@@ -1920,17 +1925,18 @@ function openEdit(id) {
   document.getElementById('editSub').textContent = `${r.orderNo || 'Servis no yok'} · ${formatDateTime(r.createdAt)} · ${state.editItems.length} servis kalemi`;
   setVal('eCustomer', r.customer);
   setVal('ePhone', normalizePhoneDisplay(r.phone));
+  setVal('eAddress', r.address || '');
   setVal('eBranch', r.branch);
   setVal('eOrderNo', r.orderNo);
   setVal('eFioriNo', r.fioriNo);
-  setVal('eShipmentDate', r.shipmentDate);
+  setVal('eShipmentDate', toDateInputValue(r.shipmentDate));
   setVal('ePriority', r.priority);
   setVal('eSalesPerson', r.salesPerson);
   setVal('eResponsible', r.responsible);
   setVal('eStatus', r.status);
-  setVal('ePartOrderDate', r.partOrderDate);
-  setVal('ePartArrivalDate', r.partArrivalDate);
-  setVal('eDeliveryDate', r.deliveryDate);
+  setVal('ePartOrderDate', toDateInputValue(r.partOrderDate));
+  setVal('ePartArrivalDate', toDateInputValue(r.partArrivalDate));
+  setVal('eDeliveryDate', toDateInputValue(r.deliveryDate));
   setVal('eNote', r.note);
   setVal('eHistoryNote', '');
   ['eiProductName','eiProductCode','eiMaterialCode','eiLotNo','eiProblem'].forEach(id => setVal(id, ''));
@@ -2041,6 +2047,7 @@ async function saveEdit() {
   const patch = {
     customer: getVal('eCustomer'),
     phone: normalizePhoneDisplay(getVal('ePhone')),
+    address: getVal('eAddress'),
     branch: normalizeBranchName(getVal('eBranch')),
     productName: first.productName,
     productCode: first.productCode,
@@ -2307,14 +2314,15 @@ function printServiceForm(id) {
     ['Kayıt Tarihi', formatDateTime(r.createdAt)],
     ['Müşteri', r.customer],
     ['Telefon', r.phone],
+    ['Adres', r.address],
     ['Şube', r.branch],
     ['Satış Danışmanı', r.salesPerson],
     ['Hale Servis No', r.orderNo],
     ['FIORI Bildirim No', r.fioriNo],
-    ['Ürün Kurulum Tarihi', r.shipmentDate],
-    ['Yedek Parça Sipariş Tarihi', r.partOrderDate],
-    ['Yedek Parça Termin Tarihi', r.partArrivalDate],
-    ['Teslim Tarihi', r.deliveryDate],
+    ['Ürün Kurulum Tarihi', formatDate(r.shipmentDate)],
+    ['Yedek Parça Sipariş Tarihi', formatDate(r.partOrderDate)],
+    ['Yedek Parça Termin Tarihi', formatDate(r.partArrivalDate)],
+    ['Teslim Tarihi', formatDate(r.deliveryDate)],
     ['Öncelik', r.priority],
     ['Genel Not', r.note]
   ].filter(row => row[0] !== 'Durum' && hasPrintValue(row[1]));
@@ -2419,14 +2427,14 @@ function printServiceForm(id) {
 
 function exportCsv() {
   const headers = [
-    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Şube','Satış Danışmanı','Sorumlu',
+    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Adres','Şube','Satış Danışmanı','Sorumlu',
     'Ürün','Ürün Kodu','Parça Kodu','Hale Servis No','FIORI Bildirim No','Lot No','Ürün Kurulum Tarihi','Yedek Parça Sipariş Tarihi',
     'Yedek Parça Termin Tarihi','Teslim Tarihi','Durum','Öncelik','Açık/Kapalı','Sorun','Not'
   ];
   const rows = state.records.map(r => [
-    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.branch, r.salesPerson, r.responsible,
-    r.productName, r.productCode, r.materialCode, r.orderNo, r.fioriNo, r.lotNo, r.shipmentDate, r.partOrderDate,
-    r.partArrivalDate, r.deliveryDate, r.status, r.priority, r.openClosed, r.problem, r.note
+    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+    r.productName, r.productCode, r.materialCode, r.orderNo, r.fioriNo, r.lotNo, formatDate(r.shipmentDate), formatDate(r.partOrderDate),
+    formatDate(r.partArrivalDate), formatDate(r.deliveryDate), r.status, r.priority, r.openClosed, r.problem, r.note
   ]);
 
   const csv = [headers].concat(rows).map(row => row.map(csvCell).join(';')).join('\n');
@@ -2553,6 +2561,36 @@ function formatDateTime(iso) {
   const d = new Date(iso);
   if (isNaN(d)) return String(iso);
   return d.toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' });
+}
+
+// Sadece tarih gösterir: GG.AA.YYYY. Saat/saat dilimi kismini atar.
+// Girdi "2026-05-08" veya "2026-05-08T21:00:00.000Z" olabilir.
+function formatDate(val) {
+  if (!val) return '';
+  let s = String(val).trim();
+  if (s === '') return '';
+  // Baştaki tek tirnagi temizle (Sheets metin isareti)
+  if (s.charAt(0) === "'") s = s.slice(1);
+  // T varsa öncesini al
+  const tIndex = s.indexOf('T');
+  if (tIndex > 0) s = s.slice(0, tIndex);
+  // YYYY-MM-DD bekleniyor
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return m[3] + '.' + m[2] + '.' + m[1];
+  // Taninmadiysa oldugu gibi dön
+  return s;
+}
+
+// input[type=date] icin: HTML date input "YYYY-MM-DD" bekler.
+// Girdideki T...Z kismini ve tek tirnagi temizler.
+function toDateInputValue(val) {
+  if (!val) return '';
+  let s = String(val).trim();
+  if (s.charAt(0) === "'") s = s.slice(1);
+  const tIndex = s.indexOf('T');
+  if (tIndex > 0) s = s.slice(0, tIndex);
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? s : '';
 }
 
 function statusClass(status) {
