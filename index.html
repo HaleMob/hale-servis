@@ -727,6 +727,39 @@
       border-color: var(--primary-dark);
     }
 
+
+    .multi-check {
+      width: 100%;
+      min-height: 42px;
+      max-height: 132px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 8px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .multi-check label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: none;
+      letter-spacing: 0;
+      cursor: pointer;
+    }
+
+    .multi-check input {
+      width: auto;
+      margin: 0;
+      flex: 0 0 auto;
+    }
+
     .item-summary {
       margin-top: 10px;
       border: 1px solid var(--line);
@@ -925,6 +958,7 @@
             <div class="field-4"><label>Şube</label><select id="nBranch"></select></div>
             <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
             <div class="field-4"><label>Sorumlu personel</label><input id="nResponsible" /></div>
+            <div class="field-4"><label>Montör</label><div id="nTechniciansBox" class="multi-check"></div></div>
             <div class="field-4"><label>Öncelik</label><select id="nPriority"></select></div>
             <div class="field-4"><label>Durum</label><select id="nStatus"></select></div>
             <div class="field-4"><label>Hale Servis No</label><input id="nOrderNo" placeholder="Otomatik oluşur" /></div>
@@ -980,6 +1014,10 @@
             <label>Öncelikler</label>
             <textarea id="settingsPriorities"></textarea>
           </div>
+          <div class="field-12">
+            <label>Montörler</label>
+            <textarea id="settingsTechnicians" placeholder="Her satıra bir montör adı yaz"></textarea>
+          </div>
         </div>
         <div class="settings-backup">
           <h3>Yedekleme</h3>
@@ -996,15 +1034,14 @@
       </div>
 
       <div class="card span-6">
-        <h2 style="margin-bottom:12px;">Storage notu</h2>
+        <h2 style="margin-bottom:12px;">Veri bağlantısı</h2>
         <p class="muted" style="line-height:1.55;margin-top:0;">
-          Bu dosya şu anda <strong>localStorage</strong> ile çalışıyor. Yani tek bilgisayarda test etmek için hazır.
-          İleride Google Sheets, Firebase veya başka veri tabanına geçerken sadece <strong>DB</strong> katmanı değişecek.
-          Arayüz ve iş akışı baştan yazılmayacak.
+          Bu sistem Google Sheets ve Apps Script üzerinden ortak veri tabanı ile çalışır.
+          Birden fazla kullanıcı aynı servis kayıtlarını görüntüleyebilir ve güncelleyebilir.
         </p>
         <div class="problem">
-          <strong>Önemli:</strong> Birden fazla kişi aynı anda kullanacak son sürüm için localStorage yeterli değildir.
-          Bu dosya önce ekranları ve süreci netleştirmek için hazırlandı.
+          <strong>Önemli:</strong> Kayıtlar tarayıcıda değil, bağlı Google Sheets dosyasında saklanır.
+          Değişikliklerden sonra sayfayı tazelemek güncel verileri getirir.
         </div>
       </div>
     </div>
@@ -1034,6 +1071,7 @@
       <div class="field-4"><label>Ürün kurulum tarihi</label><input id="eShipmentDate" type="date" /></div>
       <div class="field-4"><label>Öncelik</label><select id="ePriority"></select></div>
       <div class="field-4"><label>Satış danışmanı</label><input id="eSalesPerson" /></div>
+      <div class="field-4"><label>Montör</label><div id="eTechniciansBox" class="multi-check"></div></div>
       <div class="field-4"><label>Durum</label><select id="eStatus"></select></div>
       <div class="field-4"><label>Yedek parça sipariş tarihi</label><input id="ePartOrderDate" type="date" /></div>
       <div class="field-4"><label>Yedek parça termin tarihi</label><input id="ePartArrivalDate" type="date" /></div>
@@ -1098,7 +1136,8 @@ const DEFAULT_SETTINGS = {
     'Problemli dosya'
   ],
   branches: ['OPTIMALL MAĞAZA', 'TALAS MAĞAZA', 'MONDI MAĞAZA'],
-  priorities: ['Normal', 'Acil', 'Kritik']
+  priorities: ['Normal', 'Acil', 'Kritik'],
+  technicians: ['Montör 1', 'Montör 2', 'Montör 3']
 };
 
 const BRANCH_DISPLAY_NAMES = {
@@ -1191,7 +1230,8 @@ const DB = {
     data.settings = {
       statuses: data.settings?.statuses?.length ? data.settings.statuses : DEFAULT_SETTINGS.statuses,
       branches: normalizeBranchList(data.settings?.branches?.length ? data.settings.branches : DEFAULT_SETTINGS.branches),
-      priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities
+      priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities,
+      technicians: data.settings?.technicians?.length ? data.settings.technicians : DEFAULT_SETTINGS.technicians
     };
     data.records = Array.isArray(data.records) ? data.records.map(syncLegacyFields) : [];
     data.products = []; // ürün kataloğu kullanılmıyor
@@ -1398,6 +1438,7 @@ function makeRecord(input) {
     branch: input.branch || '',
     salesPerson: input.salesPerson || '',
     responsible: input.responsible || '',
+    technicians: input.technicians || '',
     productName: first.productName || '',
     productCode: first.productCode || '',
     materialCode: first.materialCode || '',
@@ -1500,6 +1541,45 @@ function fillSelect(id, values, labels) {
   if (values.includes(current)) el.value = current;
 }
 
+
+function splitTechnicians(text) {
+  return String(text || '')
+    .split(',')
+    .map(x => x.trim())
+    .filter(Boolean);
+}
+
+function fillTechnicianChecks(containerId, selectedText) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+
+  const selected = splitTechnicians(selectedText);
+  const names = state.settings.technicians || [];
+
+  if (!names.length) {
+    box.innerHTML = `<div class="muted" style="font-size:12px;">Ayarlar bölümünden montör ekleyin.</div>`;
+    return;
+  }
+
+  box.innerHTML = names.map(name => {
+    const checked = selected.includes(name) ? 'checked' : '';
+    return `
+      <label>
+        <input type="checkbox" value="${escAttr(name)}" ${checked}>
+        <span>${esc(name)}</span>
+      </label>
+    `;
+  }).join('');
+}
+
+function getCheckedTechnicians(containerId) {
+  const box = document.getElementById(containerId);
+  if (!box) return '';
+  return Array.from(box.querySelectorAll('input[type="checkbox"]:checked'))
+    .map(x => x.value)
+    .join(', ');
+}
+
 function renderDashboard() {
   const s = summarize();
   const stats = [
@@ -1575,7 +1655,7 @@ function renderRecords() {
 
   if (q) {
     list = list.filter(r => [
-      r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+      r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible, r.technicians,
       r.productName, r.productCode, r.materialCode, r.orderNo, r.problem,
       r.note, r.status, r.priority, getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.problem].join(' ')).join(' ')
     ].join(' ').toLowerCase().includes(q));
@@ -1647,6 +1727,7 @@ function recordCard(r) {
       <div class="meta">
         <div><div class="k">Şube</div><div class="v">${esc(r.branch || '—')}</div></div>
         <div><div class="k">Sorumlu</div><div class="v">${esc(r.responsible || '—')}</div></div>
+        <div><div class="k">Montör</div><div class="v">${esc(r.technicians || '—')}</div></div>
         <div><div class="k">Satış danışmanı</div><div class="v">${esc(r.salesPerson || '—')}</div></div>
         <div><div class="k">Hale Servis No</div><div class="v">${esc(r.orderNo || '—')}</div></div>
         <div><div class="k">FIORI Bildirim No</div><div class="v">${esc(r.fioriNo || '—')}</div></div>
@@ -1876,6 +1957,7 @@ async function createRecord() {
     branch: normalizeBranchName(getVal('nBranch')),
     salesPerson: getVal('nResponsible'),
     responsible: getVal('nResponsible'),
+    technicians: getCheckedTechnicians('nTechniciansBox'),
     orderNo: getVal('nOrderNo'),  // boşsa backend üretir
     fioriNo: getVal('nFioriNo'),
     shipmentDate: getVal('nShipmentDate'),
@@ -1906,6 +1988,7 @@ function clearNewForm(showToast = true) {
   setVal('nStatus', state.settings.statuses[0] || '');
   setVal('nPriority', 'Normal');
   refreshNewServiceNo(true);
+  fillTechnicianChecks('nTechniciansBox', '');
   renderNewItems();
   renderProductPick();
   if (showToast) toast('Form temizlendi', 'info');
@@ -1917,6 +2000,7 @@ function fillDemoRecord() {
   setVal('nBranch', state.settings.branches[0] || '');
   refreshNewServiceNo(true);
   setVal('nResponsible', 'Servis Sorumlusu');
+  fillTechnicianChecks('nTechniciansBox', (state.settings.technicians || []).slice(0, 2).join(', '));
   state.newItems = [
     normalizeServiceItem({ productName: 'Demo Üçlü Koltuk', productCode: 'DMO-3K-001', materialCode: 'DMO-AYK-SAG', problem: 'Sağ ayakta çizik mevcut.' }),
     normalizeServiceItem({ productName: 'Demo Berjer', productCode: 'DMO-BRJ-001', materialCode: 'DMO-KMS-001', problem: 'Kumaşta leke kontrolü yapılacak.' })
@@ -1944,6 +2028,7 @@ function openEdit(id) {
   setVal('ePriority', r.priority);
   setVal('eSalesPerson', r.salesPerson);
   setVal('eResponsible', r.responsible);
+  fillTechnicianChecks('eTechniciansBox', r.technicians || '');
   setVal('eStatus', r.status);
   setVal('ePartOrderDate', toDateInputValue(r.partOrderDate));
   setVal('ePartArrivalDate', toDateInputValue(r.partArrivalDate));
@@ -2072,6 +2157,7 @@ async function saveEdit() {
     priority: getVal('ePriority'),
     salesPerson: getVal('eSalesPerson'),
     responsible: (state.records.find(x => x.id === id)?.responsible || getVal('eSalesPerson')),
+    technicians: getCheckedTechnicians('eTechniciansBox'),
     status: getVal('eStatus'),
     partOrderDate: getVal('ePartOrderDate'),
     partArrivalDate: getVal('ePartArrivalDate'),
@@ -2446,12 +2532,12 @@ function printServiceForm(id) {
 
 function exportCsv() {
   const headers = [
-    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Adres','Şube','Satış Danışmanı','Sorumlu',
+    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Adres','Şube','Satış Danışmanı','Sorumlu','Montör',
     'Ürün','Ürün Kodu','Parça Kodu','Hale Servis No','FIORI Bildirim No','Lot No','Ürün Kurulum Tarihi','Yedek Parça Sipariş Tarihi',
     'Yedek Parça Termin Tarihi','Teslim Tarihi','Durum','Öncelik','Açık/Kapalı','Sorun','Not'
   ];
   const rows = state.records.map(r => [
-    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible, r.technicians,
     r.productName, r.productCode, r.materialCode, r.orderNo, r.fioriNo, r.lotNo, formatDate(r.shipmentDate), formatDate(r.partOrderDate),
     formatDate(r.partArrivalDate), formatDate(r.deliveryDate), r.status, r.priority, r.openClosed, r.problem, r.note
   ]);
@@ -2476,17 +2562,21 @@ function fillSettings() {
   setVal('settingsStatuses', state.settings.statuses.join('\n'));
   setVal('settingsBranches', state.settings.branches.join('\n'));
   setVal('settingsPriorities', state.settings.priorities.join('\n'));
+  setVal('settingsTechnicians', (state.settings.technicians || []).join('\n'));
 }
 
 async function saveSettings() {
   state.settings = {
     statuses: lines('settingsStatuses'),
     branches: normalizeBranchList(lines('settingsBranches')),
-    priorities: lines('settingsPriorities')
+    priorities: lines('settingsPriorities'),
+    technicians: lines('settingsTechnicians')
   };
   const ok = await DB.saveSettings(state.settings);
   if (!ok) return;
   fillAllSelects();
+  fillTechnicianChecks('nTechniciansBox', getCheckedTechnicians('nTechniciansBox'));
+  fillTechnicianChecks('eTechniciansBox', getCheckedTechnicians('eTechniciansBox'));
   renderAll();
   toast('Ayarlar kaydedildi', 'success');
 }
