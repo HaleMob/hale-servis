@@ -955,9 +955,10 @@
             <span class="muted" style="font-size:12px;">Tek müşteri kaydına birden fazla ürün/parça eklenebilir.</span>
           </div>
           <div class="form-grid">
-            <div class="field-4"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" /></div>
-            <div class="field-4"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
-            <div class="field-4"><label>Şube</label><select id="nBranch"></select></div>
+            <div class="field-3"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" /></div>
+            <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="nCustomerCode" placeholder="ör: 12100042" /></div>
+            <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
+            <div class="field-3"><label>Şube</label><select id="nBranch"></select></div>
             <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
             <div class="field-4"><label>Sorumlu personel</label><input id="nResponsible" /></div>
             <div class="field-4"><label>Öncelik</label><select id="nPriority"></select></div>
@@ -1064,9 +1065,10 @@
     <input type="hidden" id="eId" />
 
     <div class="form-grid">
-      <div class="field-4"><label>Müşteri</label><input id="eCustomer" /></div>
-      <div class="field-4"><label>Telefon</label><input id="ePhone" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
-      <div class="field-4"><label>Şube</label><select id="eBranch"></select></div>
+      <div class="field-3"><label>Müşteri</label><input id="eCustomer" /></div>
+      <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="eCustomerCode" placeholder="ör: 12100042" /></div>
+      <div class="field-3"><label>Telefon</label><input id="ePhone" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
+      <div class="field-3"><label>Şube</label><select id="eBranch"></select></div>
       <div class="field-12"><label>Adres</label><textarea id="eAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
 
       <div class="field-4"><label>Hale Servis No</label><input id="eOrderNo" /></div>
@@ -1435,6 +1437,7 @@ function makeRecord(input) {
     createdAt: input.createdAt || new Date().toISOString(),
     updatedAt: input.updatedAt || new Date().toISOString(),
     customer: input.customer || '',
+    customerCode: input.customerCode || '',
     phone: input.phone || '',
     address: input.address || '',
     branch: input.branch || '',
@@ -1647,7 +1650,7 @@ function renderRecords() {
 
   if (q) {
     list = list.filter(r => [
-      r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+      r.customer, r.customerCode, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
       r.productName, r.productCode, r.materialCode, r.orderNo, r.problem,
       r.note, r.status, r.priority, getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.problem].join(' ')).join(' ')
     ].join(' ').toLowerCase().includes(q));
@@ -1701,7 +1704,7 @@ function recordCard(r) {
       <div class="record-head">
         <div style="flex:1;min-width:0;">
           <div class="customer-line">
-            <span class="customer-name">${esc(r.customer || 'Müşteri yok')}</span>
+            <span class="customer-name">${esc(r.customer || 'Müşteri yok')}${r.customerCode ? ' <span style="font-size:11px;color:#8899aa;font-weight:400;">[' + esc(r.customerCode) + ']</span>' : ''}</span>
             ${r.phone ? `<span class="customer-phone">${esc(r.phone)}</span>` : ''}
           </div>
           <div class="product-line"><strong>${esc(itemSummaryText(r))}</strong></div>
@@ -2048,6 +2051,7 @@ async function createRecord() {
   // Servis no sunucuda otomatik üretilecek; UI'dan gelen değer varsa o kullanılır
   const record = makeRecord({
     customer,
+    customerCode: getVal('nCustomerCode'),
     phone: normalizePhoneDisplay(getVal('nPhone')),
     address: getVal('nAddress'),
     branch: normalizeBranchName(getVal('nBranch')),
@@ -2075,7 +2079,7 @@ async function createRecord() {
 
 function clearNewForm(showToast = true) {
   [
-    'nCustomer','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote','nAddress',
+    'nCustomer','nCustomerCode','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
   renderMontorChecks('nMontorList', []);
@@ -2114,6 +2118,7 @@ function openEdit(id) {
   state.editItemIndex = null;
   document.getElementById('editSub').textContent = `${r.orderNo || 'Servis no yok'} · ${formatDateTime(r.createdAt)} · ${state.editItems.length} servis kalemi`;
   setVal('eCustomer', r.customer);
+  setVal('eCustomerCode', r.customerCode || '');
   setVal('ePhone', normalizePhoneDisplay(r.phone));
   setVal('eAddress', r.address || '');
   setVal('eBranch', r.branch);
@@ -2237,6 +2242,7 @@ async function saveEdit() {
   const first = state.editItems[0] || normalizeServiceItem();
   const patch = {
     customer: getVal('eCustomer'),
+    customerCode: getVal('eCustomerCode'),
     phone: normalizePhoneDisplay(getVal('ePhone')),
     address: getVal('eAddress'),
     branch: normalizeBranchName(getVal('eBranch')),
