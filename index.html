@@ -300,6 +300,41 @@
     .field-8 { grid-column: span 8; }
     .field-12 { grid-column: span 12; }
 
+    .montor-check-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      min-height: 42px;
+      background: var(--surface);
+    }
+    .montor-check-list label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 400;
+      transition: background .15s, border-color .15s;
+      white-space: nowrap;
+    }
+    .montor-check-list label:has(input:checked) {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .montor-check-list label input[type=checkbox] { display: none; }
+    .montor-check-list .no-montor {
+      color: var(--muted);
+      font-size: 13px;
+      padding: 4px 2px;
+    }
+
     .toolbar {
       display: grid;
       grid-template-columns: 1.4fr 1fr 1fr 1fr 1fr auto;
@@ -927,6 +962,7 @@
             <div class="field-4"><label>Sorumlu personel</label><input id="nResponsible" /></div>
             <div class="field-4"><label>Öncelik</label><select id="nPriority"></select></div>
             <div class="field-4"><label>Durum</label><select id="nStatus"></select></div>
+            <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="nMontorList" class="montor-check-list"></div></div>
             <div class="field-4"><label>Hale Servis No</label><input id="nOrderNo" placeholder="Otomatik oluşur" /></div>
             <div class="field-4"><label>FIORI Bildirim No</label><input id="nFioriNo" placeholder="FIORI bildirim no" /></div>
             <div class="field-4"><label>Ürün kurulum tarihi</label><input id="nShipmentDate" type="date" /></div>
@@ -979,6 +1015,10 @@
           <div class="field-12">
             <label>Öncelikler</label>
             <textarea id="settingsPriorities"></textarea>
+          </div>
+          <div class="field-12">
+            <label>Montörler <span class="muted" style="font-weight:400;font-size:12px;">(her satıra bir isim)</span></label>
+            <textarea id="settingsMontors" placeholder="Ali Yılmaz&#10;Mehmet Kaya&#10;Hasan Demir"></textarea>
           </div>
         </div>
         <div class="settings-backup">
@@ -1035,6 +1075,7 @@
       <div class="field-4"><label>Öncelik</label><select id="ePriority"></select></div>
       <div class="field-4"><label>Satış danışmanı</label><input id="eSalesPerson" /></div>
       <div class="field-4"><label>Durum</label><select id="eStatus"></select></div>
+      <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="eMontorList" class="montor-check-list"></div></div>
       <div class="field-4"><label>Yedek parça sipariş tarihi</label><input id="ePartOrderDate" type="date" /></div>
       <div class="field-4"><label>Yedek parça termin tarihi</label><input id="ePartArrivalDate" type="date" /></div>
       <div class="field-4"><label>Teslim tarihi</label><input id="eDeliveryDate" type="date" /></div>
@@ -1098,7 +1139,8 @@ const DEFAULT_SETTINGS = {
     'Problemli dosya'
   ],
   branches: ['OPTIMALL MAĞAZA', 'TALAS MAĞAZA', 'MONDI MAĞAZA'],
-  priorities: ['Normal', 'Acil', 'Kritik']
+  priorities: ['Normal', 'Acil', 'Kritik'],
+  montors: []
 };
 
 const BRANCH_DISPLAY_NAMES = {
@@ -1190,7 +1232,8 @@ const DB = {
     data.settings = {
       statuses: data.settings?.statuses?.length ? data.settings.statuses : DEFAULT_SETTINGS.statuses,
       branches: normalizeBranchList(data.settings?.branches?.length ? data.settings.branches : DEFAULT_SETTINGS.branches),
-      priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities
+      priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities,
+      montors: Array.isArray(data.settings?.montors) ? data.settings.montors : []
     };
     data.records = Array.isArray(data.records) ? data.records.map(syncLegacyFields) : [];
     data.products = []; // ürün kataloğu kullanılmıyor
@@ -1395,6 +1438,7 @@ function makeRecord(input) {
     phone: input.phone || '',
     address: input.address || '',
     branch: input.branch || '',
+    montors: input.montors || '',
     salesPerson: input.salesPerson || '',
     responsible: input.responsible || '',
     productName: first.productName || '',
@@ -1489,6 +1533,35 @@ function fillAllSelects() {
   ['nStatus','eStatus'].forEach(id => fillSelect(id, state.settings.statuses));
   ['nBranch','eBranch'].forEach(id => fillSelect(id, state.settings.branches));
   ['nPriority','ePriority'].forEach(id => fillSelect(id, state.settings.priorities));
+
+  renderMontorChecks('nMontorList', []);
+  renderMontorChecks('eMontorList', []);
+}
+
+// Montör checkbox listesini oluştur
+function renderMontorChecks(containerId, selected) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const montors = state.settings.montors || [];
+  if (!montors.length) {
+    container.innerHTML = '<span class="no-montor">Önce Ayarlar\'dan montör ekleyin</span>';
+    return;
+  }
+  const sel = new Set(Array.isArray(selected) ? selected : (selected ? String(selected).split(',').map(s => s.trim()).filter(Boolean) : []));
+  container.innerHTML = montors.map(m => `
+    <label>
+      <input type="checkbox" value="${escAttr(m)}" ${sel.has(m) ? 'checked' : ''} />
+      ${esc(m)}
+    </label>
+  `).join('');
+}
+
+// Montör checkbox listesinden seçili değerleri al
+function getMontorChecks(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return '';
+  return Array.from(container.querySelectorAll('input[type=checkbox]:checked'))
+    .map(cb => cb.value).join(', ');
 }
 
 function fillSelect(id, values, labels) {
@@ -1765,6 +1838,111 @@ function renderReports() {
     <div class="card span-6"><h2 style="margin-bottom:12px;">En çok servis açılan ürünler</h2>${renderBars(topProducts)}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">En çok servis açılan müşteriler</h2>${renderBars(topCustomers)}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">Öncelik dağılımı</h2>${renderBars(countBy(state.records, 'priority', 'Normal'))}</div>
+
+    <div class="card span-12">
+      <h2 style="margin-bottom:16px;">Montör Raporu</h2>
+      ${renderMontorReport()}
+    </div>
+  `;
+}
+
+function renderMontorReport() {
+  const montors = state.settings.montors || [];
+  if (!montors.length) return '<p class="muted">Ayarlar\'dan montör ekleyince burada rapor görünür.</p>';
+
+  // Tarih filtresi UI
+  const today = new Date();
+  const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
+  const thisWeekStart = (() => {
+    const d = new Date(today);
+    d.setDate(d.getDate() - d.getDay() + 1);
+    return d.toISOString().slice(0, 10);
+  })();
+  const todayStr = today.toISOString().slice(0, 10);
+
+  const filterId = 'montorDateFilter';
+  const fromId = 'montorFrom';
+  const toId = 'montorTo';
+
+  // Mevcut filtre değerlerini oku (render sonrası DOM'dan)
+  const filterEl = document.getElementById(filterId);
+  const filter = filterEl ? filterEl.value : 'month';
+  const fromEl = document.getElementById(fromId);
+  const toEl = document.getElementById(toId);
+  let fromDate = fromEl ? fromEl.value : thisMonthStart;
+  let toDate = toEl ? toEl.value : todayStr;
+
+  if (filter === 'week') { fromDate = thisWeekStart; toDate = todayStr; }
+  else if (filter === 'month') { fromDate = thisMonthStart; toDate = todayStr; }
+  else if (filter === 'year') { fromDate = new Date(today.getFullYear(), 0, 1).toISOString().slice(0, 10); toDate = todayStr; }
+  else if (filter === 'all') { fromDate = '2000-01-01'; toDate = '2999-12-31'; }
+
+  // Montör başına istatistik
+  const stats = {};
+  montors.forEach(m => { stats[m] = { total: 0, open: 0, done: 0, urgent: 0 }; });
+
+  state.records.forEach(r => {
+    if (!r.montors) return;
+    const recDate = (r.createdAt || '').slice(0, 10);
+    if (recDate < fromDate || recDate > toDate) return;
+    const assigned = String(r.montors).split(',').map(m => m.trim()).filter(Boolean);
+    assigned.forEach(m => {
+      if (!stats[m]) stats[m] = { total: 0, open: 0, done: 0, urgent: 0 };
+      stats[m].total++;
+      if (r.openClosed === 'Kapalı') stats[m].done++;
+      else stats[m].open++;
+      if ((r.priority || '').toLowerCase().includes('acil') || (r.priority || '').toLowerCase().includes('kritik')) stats[m].urgent++;
+    });
+  });
+
+  const rows = montors.map(m => {
+    const st = stats[m] || { total: 0, open: 0, done: 0, urgent: 0 };
+    return `<tr>
+      <td style="font-weight:600;">${esc(m)}</td>
+      <td style="text-align:center;">${st.total}</td>
+      <td style="text-align:center;color:var(--primary);">${st.open}</td>
+      <td style="text-align:center;color:#16a34a;">${st.done}</td>
+      <td style="text-align:center;color:#dc2626;">${st.urgent}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+      <div>
+        <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Dönem</label>
+        <select id="${filterId}" onchange="renderReports()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+          <option value="week">Bu hafta</option>
+          <option value="month" selected>Bu ay</option>
+          <option value="year">Bu yıl</option>
+          <option value="custom">Özel aralık</option>
+          <option value="all">Tüm zamanlar</option>
+        </select>
+      </div>
+      <div id="montorCustomRange" style="display:flex;gap:8px;align-items:flex-end;">
+        <div>
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Başlangıç</label>
+          <input type="date" id="${fromId}" value="${fromDate}" onchange="renderReports()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" />
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">Bitiş</label>
+          <input type="date" id="${toId}" value="${toDate}" onchange="renderReports()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" />
+        </div>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);">
+          <th style="text-align:left;padding:8px 4px;font-size:12px;color:var(--muted);font-weight:600;">MONTÖR</th>
+          <th style="text-align:center;padding:8px 4px;font-size:12px;color:var(--muted);font-weight:600;">TOPLAM</th>
+          <th style="text-align:center;padding:8px 4px;font-size:12px;color:var(--muted);font-weight:600;">AÇIK</th>
+          <th style="text-align:center;padding:8px 4px;font-size:12px;color:var(--muted);font-weight:600;">TAMAMLANDI</th>
+          <th style="text-align:center;padding:8px 4px;font-size:12px;color:var(--muted);font-weight:600;">ACİL/KRİTİK</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows || '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:16px;">Bu dönemde kayıt yok</td></tr>'}
+      </tbody>
+    </table>
   `;
 }
 
@@ -1873,6 +2051,7 @@ async function createRecord() {
     phone: normalizePhoneDisplay(getVal('nPhone')),
     address: getVal('nAddress'),
     branch: normalizeBranchName(getVal('nBranch')),
+    montors: getMontorChecks('nMontorList'),
     salesPerson: getVal('nResponsible'),
     responsible: getVal('nResponsible'),
     orderNo: getVal('nOrderNo'),  // boşsa backend üretir
@@ -1899,6 +2078,7 @@ function clearNewForm(showToast = true) {
     'nCustomer','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
+  renderMontorChecks('nMontorList', []);
   state.newItems = [];
   setVal('nPhone', '+90 ');
   setVal('nShipmentDate', new Date().toISOString().slice(0,10));
@@ -1937,6 +2117,7 @@ function openEdit(id) {
   setVal('ePhone', normalizePhoneDisplay(r.phone));
   setVal('eAddress', r.address || '');
   setVal('eBranch', r.branch);
+  renderMontorChecks('eMontorList', r.montors || '');
   setVal('eOrderNo', r.orderNo);
   setVal('eFioriNo', r.fioriNo);
   setVal('eShipmentDate', toDateInputValue(r.shipmentDate));
@@ -2059,6 +2240,7 @@ async function saveEdit() {
     phone: normalizePhoneDisplay(getVal('ePhone')),
     address: getVal('eAddress'),
     branch: normalizeBranchName(getVal('eBranch')),
+    montors: getMontorChecks('eMontorList'),
     productName: first.productName,
     productCode: first.productCode,
     materialCode: first.materialCode,
@@ -2467,13 +2649,15 @@ function fillSettings() {
   setVal('settingsStatuses', state.settings.statuses.join('\n'));
   setVal('settingsBranches', state.settings.branches.join('\n'));
   setVal('settingsPriorities', state.settings.priorities.join('\n'));
+  setVal('settingsMontors', (state.settings.montors || []).join('\n'));
 }
 
 async function saveSettings() {
   state.settings = {
     statuses: lines('settingsStatuses'),
     branches: normalizeBranchList(lines('settingsBranches')),
-    priorities: lines('settingsPriorities')
+    priorities: lines('settingsPriorities'),
+    montors: lines('settingsMontors')
   };
   const ok = await DB.saveSettings(state.settings);
   if (!ok) return;
