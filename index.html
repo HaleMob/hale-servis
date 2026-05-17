@@ -2584,9 +2584,59 @@ function normalizePhoneForWhatsapp(phone) {
   return '';
 }
 
-function printServiceForm(id) {
+let _printSelectionContext = { recordId: null, items: [] };
+
+function openPrintSelectionModal(recordId, items) {
+  _printSelectionContext = { recordId, items };
+  const listEl = document.getElementById('printSelectionList');
+  listEl.innerHTML = items.map((it, idx) => `
+    <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;border:1px solid #E5E7EB;border-radius:8px;margin-bottom:8px;cursor:pointer;background:#FFFFFF;">
+      <input type="checkbox" class="print-sel-check" data-item-id="${escAttr(it.id)}" checked style="margin-top:3px;width:18px;height:18px;cursor:pointer;" />
+      <div style="flex:1;">
+        <div style="font-weight:600;color:#1F3D5C;margin-bottom:3px;">${idx + 1}. ${esc(it.productName || '—')}</div>
+        ${it.productCode ? `<div style="font-size:12px;color:#64748B;">Ürün Kodu: ${esc(it.productCode)}</div>` : ''}
+        ${it.materialCode ? `<div style="font-size:12px;color:#64748B;">Parça Kodu: ${esc(it.materialCode)}</div>` : ''}
+        ${it.problem ? `<div style="font-size:12px;color:#475569;margin-top:4px;font-style:italic;">"${esc(it.problem)}"</div>` : ''}
+      </div>
+    </label>
+  `).join('');
+  document.getElementById('printSelectionModal').style.display = 'flex';
+}
+
+function closePrintSelectionModal() {
+  document.getElementById('printSelectionModal').style.display = 'none';
+  _printSelectionContext = { recordId: null, items: [] };
+}
+
+function togglePrintSelectionAll(checked) {
+  document.querySelectorAll('.print-sel-check').forEach(cb => { cb.checked = checked; });
+}
+
+function confirmPrintSelection() {
+  const selected = Array.from(document.querySelectorAll('.print-sel-check:checked'))
+    .map(cb => cb.dataset.itemId);
+  const recId = _printSelectionContext.recordId;
+  closePrintSelectionModal();
+  if (selected.length === 0) {
+    if (!confirm('Hiçbir kalem seçmediniz. Tüm kalemler "sonraki servise ertelendi" olarak işaretlenecek. Devam edilsin mi?')) return;
+  }
+  printServiceForm(recId, selected);
+}
+
+function printServiceForm(id, selectedItemIds) {
   const r = state.records.find(x => x.id === id);
   if (!r) return;
+  
+  const allItems = getRecordItems(r);
+  
+  // Eğer çoklu ürün varsa ve henüz seçim yapılmadıysa, seçim modalını aç
+  if (allItems.length > 1 && !selectedItemIds) {
+    openPrintSelectionModal(id, allItems);
+    return;
+  }
+  
+  // selectedItemIds verilmemişse hepsini seç (tek ürün durumu)
+  const selectedIds = selectedItemIds || allItems.map(it => it.id);
 
   const previousTitle = document.title;
   document.title = '';
@@ -2596,7 +2646,7 @@ function printServiceForm(id) {
     return v && v !== '-' && v !== '—';
   };
 
-  const items = getRecordItems(r);
+  const items = allItems;
   const rows = [
     ['Kayıt Tarihi', formatDateTime(r.createdAt)],
     ['Müşteri', r.customer],
@@ -2618,15 +2668,19 @@ function printServiceForm(id) {
     <tr><td>${esc(row[0])}</td><td>${esc(row[1])}</td></tr>
   `).join('');
 
-  const itemRows = items.map((it, idx) => `
-    <tr>
+  const itemRows = items.map((it, idx) => {
+    const isSelected = selectedIds.indexOf(it.id) >= 0;
+    const deferredNote = isSelected ? '' : `<div class="deferred-note">⏳ Bu kalem, sonraki servis ziyaretinde teslim edilecektir.</div>`;
+    const rowClass = isSelected ? '' : 'deferred-row';
+    return `
+    <tr class="${rowClass}">
       <td class="num">${idx + 1}</td>
-      <td><strong>${esc(it.productName || '—')}</strong>${hasPrintValue(it.lotNo) ? `<br><span>Lot: ${esc(it.lotNo)}</span>` : ''}</td>
+      <td>${deferredNote}<strong>${esc(it.productName || '—')}</strong>${hasPrintValue(it.lotNo) ? `<br><span>Lot: ${esc(it.lotNo)}</span>` : ''}</td>
       <td>${esc(it.productCode || '—')}</td>
       <td>${esc(it.materialCode || '—')}</td>
       <td>${esc(it.problem || '—')}</td>
     </tr>
-  `).join('');
+  `;}).join('');
 
   document.getElementById('printArea').innerHTML = `
     <style>
@@ -2662,6 +2716,9 @@ function printServiceForm(id) {
       .print-work-orders-title { font-size:11px; font-weight:700; color:#C62828; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; margin-left:-14px; }
       .print-work-orders { margin:0; padding:0 0 0 14px; font-size:10.5px; color:#7F1D1D; line-height:1.55; font-weight:600; }
       .print-work-orders li { margin-bottom:3px; padding-left:4px; }
+      .deferred-row { background:#FFFBEB !important; }
+      .deferred-row td { opacity:0.85; }
+      .deferred-note { background:#F59E0B; color:#FFFFFF; padding:3px 8px; border-radius:4px; font-size:9.5px; font-weight:700; margin-bottom:4px; display:inline-block; letter-spacing:0.2px; }
       .print-items th { background:#284A73; color:#fff; padding:5px 5px; text-align:left; font-size:8px; letter-spacing:.2px; }
       .print-items td { border-bottom:1px solid #DDE5EF; padding:5px 5px; line-height:1.18; vertical-align:top; overflow-wrap:anywhere; }
       .print-items tr:last-child td { border-bottom:none; }
