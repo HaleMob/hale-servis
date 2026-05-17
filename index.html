@@ -839,6 +839,60 @@
 <body>
 <div class="toast" id="toast"></div>
 
+<!-- LOGIN EKRANI -->
+<div id="loginScreen" style="display:none;position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1F3D5C 0%,#284A73 100%);display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:white;border-radius:16px;padding:36px 32px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="font-size:24px;font-weight:700;color:#1F3D5C;margin-bottom:6px;">🔐 Hale Servis Takip</div>
+      <div style="font-size:13px;color:#64748B;">Lütfen kullanıcı bilgilerinizle giriş yapın</div>
+    </div>
+    <form id="loginForm" onsubmit="handleLogin(event); return false;">
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;">Kullanıcı Adı</label>
+        <input id="loginUsername" type="text" required autocomplete="username" placeholder="ad.soyad" style="width:100%;padding:12px 14px;border:1px solid #E5E7EB;border-radius:8px;font-size:15px;box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px;">Şifre</label>
+        <input id="loginPassword" type="password" required autocomplete="current-password" placeholder="••••••••" style="width:100%;padding:12px 14px;border:1px solid #E5E7EB;border-radius:8px;font-size:15px;box-sizing:border-box;" />
+      </div>
+      <div id="loginError" style="display:none;background:#FEE2E2;color:#991B1B;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:16px;border-left:3px solid #DC2626;"></div>
+      <button type="submit" id="loginBtn" style="width:100%;padding:13px;background:#1F3D5C;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:0.3px;">Giriş Yap</button>
+    </form>
+    <div style="text-align:center;margin-top:18px;font-size:11px;color:#94A3B8;">
+      Şifreni unuttuysan sistem yöneticisinden sıfırlama iste.
+    </div>
+  </div>
+</div>
+
+<!-- ŞİFRE DEĞİŞTİRME MODAL -->
+<div id="changePasswordModal" class="modal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-head">
+      <h2 style="margin:0;" id="changePasswordTitle">🔑 Şifre Değiştir</h2>
+      <button class="btn" id="changePasswordCloseBtn" onclick="closeChangePasswordModal()">Kapat</button>
+    </div>
+    <div id="changePasswordForced" style="display:none;background:#FEF3C7;color:#92400E;padding:12px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;line-height:1.5;">
+      <strong>⚠ İlk giriş:</strong> Güvenliğiniz için varsayılan şifreyi değiştirmeniz gerekiyor. Devam edebilmek için yeni bir şifre belirleyin.
+    </div>
+    <div id="changePasswordOldRow" style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">MEVCUT ŞİFRE</label>
+      <input id="cpOldPassword" type="password" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">YENİ ŞİFRE (en az 6 karakter)</label>
+      <input id="cpNewPassword" type="password" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">YENİ ŞİFRE (TEKRAR)</label>
+      <input id="cpNewPassword2" type="password" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+    </div>
+    <div id="cpError" style="display:none;background:#FEE2E2;color:#991B1B;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn primary" onclick="submitChangePassword()">Şifreyi Değiştir</button>
+    </div>
+  </div>
+</div>
+
 <div id="printSelectionModal" class="modal">
   <div class="modal-box" style="max-width:640px;">
     <div class="modal-head">
@@ -873,7 +927,7 @@
     <div class="top-actions">
       <button class="btn" onclick="DB.refresh(false)" title="Sunucudan yeniden çek">↻ Tazele</button>
       <button class="btn" onclick="changeUser()" title="Bu tarayıcının kullanıcı adını değiştir">👤 Kullanıcı</button>
-      <button class="btn primary" onclick="switchTab('yeni')">+ Yeni Servis</button>
+      <button class="btn primary role-write" onclick="switchTab('yeni')">+ Yeni Servis</button>
     </div>
   </div>
   <input type="file" id="backupInput" accept=".json" style="display:none" onchange="importBackup(event)" />
@@ -883,7 +937,8 @@
     <button class="tab" data-tab="kayitlar" onclick="switchTab('kayitlar')">Servis Kayıtları</button>
     <button class="tab" data-tab="yeni" onclick="switchTab('yeni')">Yeni Servis</button>
     <button class="tab" data-tab="raporlar" onclick="switchTab('raporlar')">Raporlar</button>
-    <button class="tab" data-tab="ayarlar" onclick="switchTab('ayarlar')">Ayarlar</button>
+    <button class="tab role-user" data-tab="ayarlar" onclick="switchTab('ayarlar')">Ayarlar</button>
+    <button class="tab role-admin" data-tab="kullanicilar" onclick="switchTab('kullanicilar')">Kullanıcılar</button>
   </div>
 
   <section class="panel active" id="panel-dashboard">
@@ -951,7 +1006,7 @@
             <option value="today">Bugün açılanlar</option>
           </select>
         </div>
-        <button class="btn" onclick="exportCsv()">Excel/CSV</button>
+        <button class="role-manager-up btn" onclick="exportCsv()">Excel/CSV</button>
       </div>
     </div>
 
@@ -1045,13 +1100,13 @@
           <h3>Yedekleme</h3>
           <p class="muted" style="line-height:1.45;margin:6px 0 0;">Yedek alma ve yedek yükleme işlemleri artık ayarlar bölümündedir.</p>
           <div class="backup-actions">
-            <button class="btn" onclick="exportBackup()">Yedek Al</button>
+            <button class="btn role-admin" onclick="exportBackup()">Yedek Al</button>
             <button class="btn" onclick="document.getElementById('backupInput').click()">Yedek Yükle</button>
           </div>
         </div>
         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
           <button class="btn primary" onclick="saveSettings()">Ayarları Kaydet</button>
-          <button class="btn danger" onclick="resetAllData()">Tüm Veriyi Sıfırla</button>
+          <button class="btn danger role-admin" onclick="resetAllData()">Tüm Veriyi Sıfırla</button>
         </div>
       </div>
 
@@ -1153,6 +1208,66 @@
       </div>
     </div>
   </section>
+
+  <section id="panel-kullanicilar" class="panel role-admin">
+    <div class="grid">
+      <div class="card span-7">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <h2 style="margin:0;">👥 Kullanıcı Listesi</h2>
+          <button class="btn primary" onclick="openAddUserModal()">+ Yeni Kullanıcı</button>
+        </div>
+        <div id="usersList" style="display:flex;flex-direction:column;gap:8px;"></div>
+      </div>
+      <div class="card span-5">
+        <h2 style="margin-bottom:12px;">ℹ️ Rol Açıklamaları</h2>
+        <div style="font-size:13px;line-height:1.7;color:#2C3E50;">
+          <p style="margin:0 0 8px;"><strong style="color:#7F1D1D;">👑 Admin:</strong> Her şeyi yapabilir. Kullanıcı yönetimi, yedek alma, veri sıfırlama.</p>
+          <p style="margin:0 0 8px;"><strong style="color:#1E40AF;">⭐ Manager:</strong> Tüm operasyonel işler, başkalarının kaydını düzenleme, silme, ayarlar, CSV export.</p>
+          <p style="margin:0 0 8px;"><strong style="color:#065F46;">👤 User:</strong> Kayıt oluşturur, sadece kendi kayıtlarını düzenler. Silme/ayarlar yetkisi yok.</p>
+          <p style="margin:0 0 8px;"><strong style="color:#6B7280;">👁 Readonly:</strong> Sadece görüntüler ve yazdırır. Hiçbir şeye dokunamaz.</p>
+        </div>
+        <div style="background:#FEF3C7;border-left:4px solid #F59E0B;padding:10px 12px;margin-top:14px;border-radius:6px;font-size:13px;line-height:1.5;color:#78350F;">
+          <strong>💡 İpucu:</strong> Şifre sıfırlandığında varsayılan değer <code>hale2026</code> olur. Kullanıcı ilk girişte yeni şifre belirler.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- KULLANICI EKLEME MODAL -->
+  <div id="addUserModal" class="modal">
+    <div class="modal-box" style="max-width:480px;">
+      <div class="modal-head">
+        <h2 style="margin:0;">+ Yeni Kullanıcı</h2>
+        <button class="btn" onclick="closeAddUserModal()">Kapat</button>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">KULLANICI ADI <small>(sadece harf, rakam, nokta)</small></label>
+        <input id="auUsername" placeholder="ad.soyad" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">AD SOYAD</label>
+        <input id="auFullName" placeholder="Ad Soyad" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">ROL</label>
+        <select id="auRole" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;">
+          <option value="user">👤 User - Personel</option>
+          <option value="manager">⭐ Manager - Yönetici Yardımcısı</option>
+          <option value="readonly">👁 Readonly - Sadece Görüntüler</option>
+          <option value="admin">👑 Admin - Sistem Yöneticisi</option>
+        </select>
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:6px;">BAŞLANGIÇ ŞİFRESİ</label>
+        <input id="auPassword" type="text" value="hale2026" style="width:100%;padding:10px 12px;border:1px solid #E5E7EB;border-radius:8px;box-sizing:border-box;" />
+        <div style="font-size:11px;color:#94A3B8;margin-top:4px;">Kullanıcı ilk girişte yeni şifre belirler.</div>
+      </div>
+      <div id="auError" style="display:none;background:#FEE2E2;color:#991B1B;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn primary" onclick="submitAddUser()">Kullanıcıyı Ekle</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="modal" id="editModal">
@@ -1213,7 +1328,7 @@
       <button class="btn" onclick="renderHistory()">Geçmişi Göster</button>
       <button class="btn" onclick="copyWhatsappText(getVal('eId'))">WhatsApp Aç</button>
       <button class="btn" onclick="printServiceForm(getVal('eId'))">Servis Formu Yazdır</button>
-      <button class="btn danger" onclick="deleteCurrentRecord()">Kaydı Sil</button>
+      <button class="btn danger role-manager-up" onclick="deleteCurrentRecord()">Kaydı Sil</button>
     </div>
 
     <div id="historyBox" style="margin-top:12px;"></div>
@@ -1297,7 +1412,9 @@ const state = {
 //   1) Apps Script'te deploy edip aldığın Web App URL'sini API_URL'ye yapıştır.
 //   2) Apps Script'teki API_KEY ile aşağıdaki API_KEY tıpatıp aynı olmalı.
 const API_URL = 'https://script.google.com/macros/s/AKfycbwMdYHK7qeJTJ79aoqgpWEQaffBhyccOag6qg1ODWZSf2KKf-zzYnO1PonvPTk0gtno/exec';
-const API_KEY = 'hale-mobilya-7k9m4-q2x8w-2026-rt5n-gizli-anahtar-xyz';
+// Token localStorage'da saklanıyor. Login modal'ı bunu ayarlar.
+let AUTH_TOKEN = localStorage.getItem('hale_auth_token') || '';
+let AUTH_USER = null; // { username, role, fullName, mustChangePassword }
 
 // Aynı anda birden fazla kullanıcı için: her tarayıcı kendi takma adını saklar
 function currentUser() {
@@ -1316,8 +1433,7 @@ function changeUser() {
 }
 
 async function apiCall(action, data) {
-  const body = { key: API_KEY, action, data: data || {}, user: currentUser() };
-  // text/plain → CORS preflight'ı atlatmak için (Apps Script bunu kabul eder)
+  const body = { token: AUTH_TOKEN, action, data: data || {} };
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1325,7 +1441,20 @@ async function apiCall(action, data) {
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   const json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'unknown error');
+  if (!json.ok) {
+    // Token geçersizse login ekranını göster
+    if (json.code === 'NO_AUTH') {
+      AUTH_TOKEN = '';
+      AUTH_USER = null;
+      localStorage.removeItem('hale_auth_token');
+      showLoginScreen();
+      throw new Error('Oturum süresi doldu. Lütfen tekrar giriş yapın.');
+    }
+    if (json.code === 'NO_PERMISSION') {
+      toast('Bu işlem için yetkiniz yok.', 'error');
+    }
+    throw new Error(json.error || 'unknown error');
+  }
   return json;
 }
 
@@ -1576,21 +1705,334 @@ function makeRecord(input) {
   };
 }
 
-async function boot() {
-  // Yapılandırma kontrolü
-  if (API_URL.indexOf('BURAYA') >= 0 || API_KEY.indexOf('BURAYA') >= 0) {
-    alert('UYARI: API_URL veya API_KEY ayarlanmamış. HTML dosyasının başındaki <script> bloğunda bu iki değeri doldur.');
+// ============= KULLANICI YÖNETIMI =============
+
+async function renderUsersList() {
+  const listEl = document.getElementById('usersList');
+  if (!listEl) return;
+  listEl.innerHTML = '<div style="color:#94A3B8;font-size:13px;padding:20px;text-align:center;">Yükleniyor...</div>';
+  try {
+    const json = await apiCall('listUsers');
+    const users = json.users || [];
+    if (users.length === 0) {
+      listEl.innerHTML = '<div style="color:#94A3B8;padding:20px;text-align:center;">Kullanıcı yok.</div>';
+      return;
+    }
+    const roleLabels = { admin: '👑 Admin', manager: '⭐ Manager', user: '👤 User', readonly: '👁 Readonly' };
+    const roleColors = { admin: '#7F1D1D', manager: '#1E40AF', user: '#065F46', readonly: '#6B7280' };
+    listEl.innerHTML = users.map(u => {
+      const isActive = (u.active === true || String(u.active).toLowerCase() === 'true');
+      return `
+      <div style="border:1px solid #E5E7EB;border-radius:10px;padding:12px 14px;background:${isActive ? '#FFFFFF' : '#F9FAFB'};display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="font-weight:600;color:#1F3D5C;font-size:14px;">${esc(u.fullName)} ${!isActive ? '<span style=\'color:#94A3B8;font-size:11px;font-weight:400;\'>(pasif)</span>' : ''}</div>
+          <div style="font-size:12px;color:#64748B;margin-top:2px;">@${esc(u.username)}</div>
+        </div>
+        <div style="padding:4px 10px;background:${roleColors[u.role] || '#6B7280'}15;color:${roleColors[u.role] || '#6B7280'};border-radius:6px;font-size:12px;font-weight:600;">${roleLabels[u.role] || u.role}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn small" onclick="resetUserPassword('${escAttr(u.username)}')" title="Şifre Sıfırla">🔑</button>
+          <button class="btn small" onclick="toggleUserActive('${escAttr(u.username)}', ${!isActive})" title="${isActive ? 'Devre dışı bırak' : 'Aktif et'}">${isActive ? '⏸' : '▶️'}</button>
+          <button class="btn small" onclick="editUserRole('${escAttr(u.username)}', '${escAttr(u.role)}', '${escAttr(u.fullName)}')" title="Düzenle">✏️</button>
+          <button class="btn small danger" onclick="deleteUserConfirm('${escAttr(u.username)}', '${escAttr(u.fullName)}')" title="Sil">🗑</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    listEl.innerHTML = '<div style="color:#DC2626;padding:20px;text-align:center;">Hata: ' + esc(e.message) + '</div>';
+  }
+}
+
+function openAddUserModal() {
+  document.getElementById('addUserModal').classList.add('open');
+  document.getElementById('auUsername').value = '';
+  document.getElementById('auFullName').value = '';
+  document.getElementById('auRole').value = 'user';
+  document.getElementById('auPassword').value = 'hale2026';
+  document.getElementById('auError').style.display = 'none';
+}
+
+function closeAddUserModal() {
+  document.getElementById('addUserModal').classList.remove('open');
+}
+
+async function submitAddUser() {
+  const username = document.getElementById('auUsername').value.trim().toLowerCase();
+  const fullName = document.getElementById('auFullName').value.trim();
+  const role = document.getElementById('auRole').value;
+  const password = document.getElementById('auPassword').value;
+  const errEl = document.getElementById('auError');
+  errEl.style.display = 'none';
+  if (!username || !fullName || !password) {
+    errEl.textContent = 'Tüm alanları doldurun.';
+    errEl.style.display = 'block';
     return;
   }
-  currentUser(); // ilk girişte isim sor
   try {
-    const data = await DB.load();
-    state.records = data.records;
-    state.products = [];
-    state.settings = data.settings;
-  } catch (e) {
-    alert('Sunucuya bağlanılamadı: ' + e.message + '\n\nApps Script URL ve API anahtarını kontrol et.');
+    await apiCall('addUser', { username, fullName, role, password });
+    closeAddUserModal();
+    toast('Kullanıcı eklendi: ' + fullName, 'success');
+    renderUsersList();
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+async function resetUserPassword(username) {
+  if (!confirm('"' + username + '" şifresini sıfırlamak istiyor musun?\n\nYeni şifre: hale2026 olarak ayarlanacak. Kullanıcı ilk girişte değiştirmek zorunda kalacak.')) return;
+  try {
+    await apiCall('resetPassword', { username });
+    toast('Şifre sıfırlandı: hale2026', 'success');
+  } catch(e) {
+    toast('Hata: ' + e.message, 'error');
+  }
+}
+
+async function toggleUserActive(username, makeActive) {
+  try {
+    await apiCall('updateUser', { username, active: makeActive });
+    toast(makeActive ? 'Kullanıcı aktif edildi' : 'Kullanıcı pasif edildi', 'success');
+    renderUsersList();
+  } catch(e) {
+    toast('Hata: ' + e.message, 'error');
+  }
+}
+
+function editUserRole(username, currentRole, currentFullName) {
+  const newRole = prompt('Yeni rol için yaz: admin, manager, user, readonly\n\nMevcut: ' + currentRole, currentRole);
+  if (!newRole) return;
+  if (['admin','manager','user','readonly'].indexOf(newRole) < 0) {
+    alert('Geçersiz rol. Sadece: admin, manager, user, readonly');
     return;
+  }
+  apiCall('updateUser', { username, role: newRole }).then(() => {
+    toast('Rol güncellendi', 'success');
+    renderUsersList();
+  }).catch(e => toast('Hata: ' + e.message, 'error'));
+}
+
+async function deleteUserConfirm(username, fullName) {
+  if (!confirm('"' + fullName + '" (@' + username + ') kullanıcısını silmek istediğine emin misin?\n\nBu işlem geri alınamaz.')) return;
+  try {
+    await apiCall('deleteUser', { username });
+    toast('Kullanıcı silindi', 'success');
+    renderUsersList();
+  } catch(e) {
+    toast('Hata: ' + e.message, 'error');
+  }
+}
+
+// ============= AUTH FONKSİYONLARI =============
+
+function showLoginScreen() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginError').style.display = 'none';
+  // App'i gizle
+  const app = document.querySelector('.app');
+  if (app) app.style.display = 'none';
+  setTimeout(() => {
+    const u = document.getElementById('loginUsername');
+    if (u) u.focus();
+  }, 100);
+}
+
+function hideLoginScreen() {
+  document.getElementById('loginScreen').style.display = 'none';
+  const app = document.querySelector('.app');
+  if (app) app.style.display = '';
+}
+
+async function handleLogin(e) {
+  if (e) e.preventDefault();
+  const username = document.getElementById('loginUsername').value.trim().toLowerCase();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  const btn = document.getElementById('loginBtn');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Giriş yapılıyor...';
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'login', data: { username, password } })
+    });
+    const json = await res.json();
+    if (!json.ok) {
+      errEl.textContent = json.error || 'Giriş başarısız';
+      errEl.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Giriş Yap';
+      return;
+    }
+    AUTH_TOKEN = json.token;
+    AUTH_USER = json.user;
+    localStorage.setItem('hale_auth_token', AUTH_TOKEN);
+    hideLoginScreen();
+    btn.disabled = false;
+    btn.textContent = 'Giriş Yap';
+    document.getElementById('loginPassword').value = '';
+    await boot();
+  } catch (err) {
+    errEl.textContent = 'Bağlantı hatası: ' + err.message;
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Giriş Yap';
+  }
+}
+
+async function handleLogout() {
+  if (!confirm('Çıkış yapmak istediğine emin misin?')) return;
+  try {
+    await apiCall('logout');
+  } catch(e) { /* ignore */ }
+  AUTH_TOKEN = '';
+  AUTH_USER = null;
+  localStorage.removeItem('hale_auth_token');
+  location.reload();
+}
+
+function showChangePasswordModal(forced) {
+  const modal = document.getElementById('changePasswordModal');
+  modal.classList.add('open');
+  document.getElementById('changePasswordForced').style.display = forced ? 'block' : 'none';
+  document.getElementById('changePasswordOldRow').style.display = forced ? 'none' : 'block';
+  document.getElementById('changePasswordCloseBtn').style.display = forced ? 'none' : '';
+  document.getElementById('cpOldPassword').value = '';
+  document.getElementById('cpNewPassword').value = '';
+  document.getElementById('cpNewPassword2').value = '';
+  document.getElementById('cpError').style.display = 'none';
+}
+
+function closeChangePasswordModal() {
+  document.getElementById('changePasswordModal').classList.remove('open');
+}
+
+async function submitChangePassword() {
+  const oldP = document.getElementById('cpOldPassword').value;
+  const newP = document.getElementById('cpNewPassword').value;
+  const newP2 = document.getElementById('cpNewPassword2').value;
+  const errEl = document.getElementById('cpError');
+  errEl.style.display = 'none';
+  if (newP.length < 6) {
+    errEl.textContent = 'Yeni şifre en az 6 karakter olmalı.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (newP !== newP2) {
+    errEl.textContent = 'Yeni şifre tekrarı uyuşmuyor.';
+    errEl.style.display = 'block';
+    return;
+  }
+  try {
+    await apiCall('changePassword', { oldPassword: oldP, newPassword: newP });
+    closeChangePasswordModal();
+    if (AUTH_USER) AUTH_USER.mustChangePassword = false;
+    toast('Şifren başarıyla değiştirildi.', 'success');
+  } catch(e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+  }
+}
+
+// ============= ROL TABANLI YETKILENDIRME =============
+
+function hasRole() {
+  if (!AUTH_USER) return false;
+  for (var i = 0; i < arguments.length; i++) {
+    if (AUTH_USER.role === arguments[i]) return true;
+  }
+  return false;
+}
+
+function applyRolePermissions() {
+  if (!AUTH_USER) return;
+  const role = AUTH_USER.role;
+  // Readonly: tüm yazma butonları gizle
+  // User: ayarlar, kullanıcı yönetimi, silme yetkisi yok
+  // Manager: kullanıcı yönetimi yok
+  // Admin: her şey
+
+  document.body.dataset.role = role;
+
+  // CSS sınıflarıyla göster/gizle
+  const styleId = 'role-perms-style';
+  let st = document.getElementById(styleId);
+  if (!st) {
+    st = document.createElement('style');
+    st.id = styleId;
+    document.head.appendChild(st);
+  }
+  let css = '';
+  if (role === 'readonly') {
+    css += '.role-write, .role-manager-up, .role-admin { display:none !important; }';
+    css += '.role-user-only { display:none !important; }';
+    // Form alanlarını readonly yap
+    css += 'input:not(#loginUsername):not(#loginPassword):not(#cpOldPassword):not(#cpNewPassword):not(#cpNewPassword2), textarea, select { pointer-events:none; background:#F8FAFC !important; }';
+  } else if (role === 'user') {
+    css += '.role-admin, .role-manager-up { display:none !important; }';
+  } else if (role === 'manager') {
+    css += '.role-admin { display:none !important; }';
+  }
+  st.textContent = css;
+}
+
+function updateUserHeader() {
+  if (!AUTH_USER) return;
+  let header = document.getElementById('userHeader');
+  if (!header) {
+    // Topbar'ın sağına ekle
+    const topbar = document.querySelector('.topbar');
+    if (topbar) {
+      header = document.createElement('div');
+      header.id = 'userHeader';
+      header.style.cssText = 'display:flex;align-items:center;gap:10px;margin-left:auto;color:white;';
+      topbar.appendChild(header);
+    }
+  }
+  if (header) {
+    const roleLabel = { admin: '👑 Yönetici', manager: '⭐ Yönetici Yard.', user: '👤 Personel', readonly: '👁 Görüntüleyici' }[AUTH_USER.role] || AUTH_USER.role;
+    header.innerHTML = `
+      <div style="text-align:right;font-size:12px;line-height:1.3;">
+        <div style="font-weight:600;">${esc(AUTH_USER.fullName || AUTH_USER.username)}</div>
+        <div style="opacity:0.75;font-size:11px;">${roleLabel}</div>
+      </div>
+      <button class="btn small" onclick="showChangePasswordModal(false)" title="Şifremi Değiştir" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white;">🔑</button>
+      <button class="btn small" onclick="handleLogout()" title="Çıkış" style="background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.3);color:white;">Çıkış</button>
+    `;
+  }
+}
+
+async function boot() {
+  if (API_URL.indexOf('BURAYA') >= 0) {
+    alert('UYARI: API_URL ayarlanmamış. HTML dosyasındaki API_URL değerini doldur.');
+    return;
+  }
+  // Token var mı kontrol et
+  if (!AUTH_TOKEN) {
+    showLoginScreen();
+    return;
+  }
+  // Token var, kullanıcı bilgisini al ve veriyi yükle
+  try {
+    const json = await apiCall('load');
+    AUTH_USER = json.user;
+    const data = json.data || {};
+    state.records = Array.isArray(data.records) ? data.records.map(syncLegacyFields) : [];
+    state.products = [];
+    state.settings = {
+      statuses: data.settings?.statuses?.length ? data.settings.statuses : DEFAULT_SETTINGS.statuses,
+      branches: normalizeBranchList(data.settings?.branches?.length ? data.settings.branches : DEFAULT_SETTINGS.branches),
+      priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities,
+      montors: Array.isArray(data.settings?.montors) ? data.settings.montors : []
+    };
+  } catch (e) {
+    // Token geçersizse showLoginScreen apiCall'da çağrıldı
+    return;
+  }
+  // Şifre değiştirme zorunluysa
+  if (AUTH_USER.mustChangePassword) {
+    showChangePasswordModal(true);
   }
   fillAllSelects();
   fillSettings();
@@ -1600,9 +2042,11 @@ async function boot() {
     branchEl.addEventListener('change', () => refreshNewServiceNo(false));
     branchEl.dataset.autoNoBound = '1';
   }
+  applyRolePermissions();
+  updateUserHeader();
   renderAll();
   startAutoRefresh();
-  toast('Dashboard hazır · ' + currentUser(), 'success');
+  toast('Hoş geldin · ' + (AUTH_USER.fullName || AUTH_USER.username), 'success');
 }
 
 // Otomatik yenileme: 15 sn'de bir sunucudan tazeleyelim
@@ -1631,6 +2075,7 @@ function switchTab(tab) {
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'kayitlar') renderRecords();
   if (tab === 'raporlar') renderReports();
+  if (tab === 'kullanicilar') renderUsersList();
 }
 
 function fillAllSelects() {
@@ -1711,7 +2156,7 @@ function renderDashboard() {
         <strong>${esc(r.customer)} · ${getRecordItems(r).length} kalem</strong>
         <div class="muted" style="font-size:12px;">${esc(r.status)} · ${ageDays(r.createdAt)} gün · ${esc(r.branch || 'Şube yok')}</div>
       </div>
-      <button class="btn small" onclick="openEdit('${escAttr(r.id)}')">Aç</button>
+      <button class="btn small role-write" onclick="openEdit('${escAttr(r.id)}')">Aç</button>
     </div>
   `).join('') : `<div class="empty"><strong>Geciken/acil kayıt yok</strong>Şu an dashboard temiz görünüyor.</div>`;
 
@@ -1727,7 +2172,7 @@ function renderDashboard() {
         <strong>${esc(r.customer)} · ${esc(r.status)}</strong>
         <div class="muted" style="font-size:12px;">${formatDateTime(r.updatedAt)} · ${esc(itemSummaryText(r))}</div>
       </div>
-      <button class="btn small" onclick="openEdit('${escAttr(r.id)}')">Aç</button>
+      <button class="btn small role-write" onclick="openEdit('${escAttr(r.id)}')">Aç</button>
     </div>
   `).join('') : `<div class="empty"><strong>Kayıt yok</strong>Yeni servis açınca burada görünür.</div>`;
 
@@ -1839,7 +2284,7 @@ function recordCard(r) {
         <select onchange="quickStatus('${escAttr(r.id)}', this.value)">
           ${state.settings.statuses.map(s => `<option value="${escAttr(s)}" ${s === r.status ? 'selected' : ''}>${esc(s)}</option>`).join('')}
         </select>
-        <button class="btn small" onclick="openEdit('${escAttr(r.id)}')">Düzenle</button>
+        <button class="btn small role-write" onclick="openEdit('${escAttr(r.id)}')">Düzenle</button>
         <button class="btn small" onclick="copyWhatsappText('${escAttr(r.id)}')">WhatsApp Aç</button>
         <button class="btn small" onclick="printServiceForm('${escAttr(r.id)}')">Yazdır</button>
       </div>
