@@ -2545,7 +2545,8 @@ function printServiceForm(id) {
       html, body { margin:0 !important; padding:0 !important; }
       .print-form { width: 190mm; margin: 0 auto; padding: 4mm 9mm 4mm; font-family: Arial, "Helvetica Neue", sans-serif; color:#102033; background:#fff; box-sizing:border-box; overflow:hidden; }
       .print-top { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #284A73; padding-bottom:4px; margin-bottom:4px; }
-      .print-brand { display:flex; flex-direction:row; align-items:center; gap:14px; }
+      .print-brand { display:flex !important; flex-direction:row !important; align-items:center !important; gap:14px !important; }
+      .print-brand img { display:inline-block !important; visibility:visible !important; }
       .print-real-logo { width:220px; height:auto; max-height:54px; display:block; object-fit:contain; object-position:left center; }
       .print-brand-sub { display:none; }
       .print-doc-meta { text-align:right; font-size:9px; color:#667085; line-height:1.35; }
