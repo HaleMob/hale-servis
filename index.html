@@ -2600,11 +2600,11 @@ function openPrintSelectionModal(recordId, items) {
       </div>
     </label>
   `).join('');
-  document.getElementById('printSelectionModal').style.display = 'flex';
+  document.getElementById('printSelectionModal').classList.add('open');
 }
 
 function closePrintSelectionModal() {
-  document.getElementById('printSelectionModal').style.display = 'none';
+  document.getElementById('printSelectionModal').classList.remove('open');
   _printSelectionContext = { recordId: null, items: [] };
 }
 
