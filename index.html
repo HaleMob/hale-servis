@@ -839,6 +839,25 @@
 <body>
 <div class="toast" id="toast"></div>
 
+<div id="printSelectionModal" class="modal">
+  <div class="modal-box" style="max-width:640px;">
+    <div class="modal-head">
+      <h2 style="margin:0;">🖨️ Yazdırılacak Kalemleri Seç</h2>
+      <button class="btn" onclick="closePrintSelectionModal()">Kapat</button>
+    </div>
+    <p style="margin:0 0 16px;color:#475569;font-size:14px;line-height:1.5;">
+      Bu serviste birden fazla kalem var. Müşteriye <strong>şu an teslim edilecek</strong> kalemleri işaretle. 
+      İşaretlemediğin kalemler kağıtta görünecek ama üzerinde <em>"sonraki servis ziyaretinde teslim edilecektir"</em> ibaresi yer alacak.
+    </p>
+    <div id="printSelectionList" style="margin-bottom:20px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid #E5E7EB;padding-top:16px;flex-wrap:wrap;">
+      <button class="btn" onclick="togglePrintSelectionAll(true)">Hepsini Seç</button>
+      <button class="btn" onclick="togglePrintSelectionAll(false)">Hiçbirini Seçme</button>
+      <button class="btn primary" onclick="confirmPrintSelection()">Seçilenleri Yazdır</button>
+    </div>
+  </div>
+</div>
+
 <div class="print-only" id="printArea"></div>
 
 <div class="app">
