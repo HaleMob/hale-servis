@@ -926,7 +926,7 @@
     </div>
     <div class="top-actions">
       <button class="btn" onclick="DB.refresh(false)" title="Sunucudan yeniden çek">↻ Tazele</button>
-      <button class="btn" onclick="changeUser()" title="Bu tarayıcının kullanıcı adını değiştir">👤 Kullanıcı</button>
+      
       <button class="btn primary role-write" onclick="switchTab('yeni')">+ Yeni Servis</button>
     </div>
   </div>
@@ -1418,20 +1418,10 @@ let AUTH_USER = null; // { username, role, fullName, mustChangePassword }
 
 // Aynı anda birden fazla kullanıcı için: her tarayıcı kendi takma adını saklar
 function currentUser() {
-  let u = localStorage.getItem('hale_user_name') || '';
-  if (!u) {
-    u = (prompt('Adın? (İşlem geçmişinde bu isim görünecek)') || '').trim();
-    if (!u) u = 'Bilinmeyen';
-    localStorage.setItem('hale_user_name', u);
-  }
-  return u;
+  // Login sisteminden gelen kullanıcı adını döndürür
+  if (AUTH_USER) return AUTH_USER.fullName || AUTH_USER.username;
+  return 'Bilinmeyen';
 }
-function changeUser() {
-  const cur = localStorage.getItem('hale_user_name') || '';
-  const u = (prompt('Yeni kullanıcı adı:', cur) || '').trim();
-  if (u) { localStorage.setItem('hale_user_name', u); toast('Kullanıcı: ' + u, 'info'); }
-}
-
 async function apiCall(action, data) {
   const body = { token: AUTH_TOKEN, action, data: data || {} };
   const res = await fetch(API_URL, {
@@ -2004,6 +1994,9 @@ function updateUserHeader() {
 }
 
 async function boot() {
+  // Eski user_name localStorage kaydını temizle (artık AUTH_USER kullanıyoruz)
+  localStorage.removeItem('hale_user_name');
+  
   if (API_URL.indexOf('BURAYA') >= 0) {
     alert('UYARI: API_URL ayarlanmamış. HTML dosyasındaki API_URL değerini doldur.');
     return;
