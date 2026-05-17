@@ -1037,15 +1037,99 @@
       </div>
 
       <div class="card span-6">
-        <h2 style="margin-bottom:12px;">Storage notu</h2>
-        <p class="muted" style="line-height:1.55;margin-top:0;">
-          Bu dosya şu anda <strong>localStorage</strong> ile çalışıyor. Yani tek bilgisayarda test etmek için hazır.
-          İleride Google Sheets, Firebase veya başka veri tabanına geçerken sadece <strong>DB</strong> katmanı değişecek.
-          Arayüz ve iş akışı baştan yazılmayacak.
-        </p>
-        <div class="problem">
-          <strong>Önemli:</strong> Birden fazla kişi aynı anda kullanacak son sürüm için localStorage yeterli değildir.
-          Bu dosya önce ekranları ve süreci netleştirmek için hazırlandı.
+        <h2 style="margin-bottom:12px;">📖 Kullanım Kılavuzu</h2>
+        
+        <details open style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">🟢 Yeni Servis Kaydı Oluşturma</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Yeni Servis"</strong> sekmesine tıkla. Müşteri bilgilerini doldur (ad, telefon, adres, şube). 
+            Servis kalemini (ürün adı, ürün kodu, parça kodu, sorun) ekle. Birden fazla ürün varsa 
+            <strong>"+ Kalem Ekle"</strong> ile yeni ürün satırı açabilirsin. Öncelik (Normal/Acil/Kritik) ve 
+            sorumlu kişiyi seç. <strong>"Kaydı Oluştur"</strong> butonuna bas — kayıt otomatik olarak Google Sheets'e işlenir.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">✏️ Mevcut Kaydı Düzenleme</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Servis Kayıtları"</strong> sekmesinde ilgili kaydı bul. Kartın üzerindeki 
+            <strong>"Düzenle"</strong> butonuna tıkla. Açılan modalde tüm alanları güncelleyebilirsin: 
+            durum, parça sipariş tarihi, parça geliş tarihi, teslim tarihi, montör atama, not vb. 
+            Her değişiklik geçmiş kaydına işlenir. <strong>"Kaydet"</strong> dedikten sonra Google Sheets güncellenir.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">🔍 Arama ve Filtreleme</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Servis Kayıtları"</strong> sekmesinin üst kısmındaki arama kutusuna müşteri adı, telefon, 
+            servis numarası, Fiori bildirim no veya ürün adı yazarak arama yapabilirsin. 
+            Şube, durum ve öncelik filtreleriyle daraltma yapabilirsin. <strong>"Sadece açıklar"</strong> 
+            seçeneğiyle tamamlanmamış kayıtları görebilirsin.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">📱 WhatsApp ile Müşteri Bilgilendirme</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            Her servis kartında <strong>"WhatsApp Aç"</strong> butonu vardır. Bu buton, müşterinin numarasına 
+            otomatik olarak durum bilgisi mesajı hazırlayıp WhatsApp Web/uygulamasını açar. 
+            Mesaj içeriği servisin güncel durumuna göre otomatik şekillenir (parça bekleniyor, parça geldi, 
+            tamamlandı vb.). Mesajı kontrol edip gönder.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">🖨️ Servis Formu Yazdırma</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            Her servis kartında <strong>"Yazdır"</strong> butonu vardır. Profesyonel A4 servis formu açılır: 
+            Hale Mobilya, Bellona ve Mondihome logoları, müşteri bilgileri, servis kalemleri ve 
+            personel/müşteri imza alanları içerir. Müşteri teslim alırken bu formu imzalattırabilirsin.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">📊 Raporlar Sekmesi</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Raporlar"</strong> sekmesinde 4 farklı rapor görebilirsin:<br>
+            • <strong>Genel:</strong> Toplam, açık, kapalı kayıt sayıları<br>
+            • <strong>Durum Dağılımı:</strong> Her durumda kaç kayıt var<br>
+            • <strong>Şube Bazlı:</strong> Hangi şubede ne kadar kayıt<br>
+            • <strong>Montör:</strong> Hangi montöre ne kadar iş atandı, kaçı tamamlandı<br>
+            CSV olarak indirebilir, Excel'de açabilirsin.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">⚙️ Ayarlar - Liste Düzenleme</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Ayarlar"</strong> sekmesinden durumları, şubeleri, öncelikleri ve montörleri 
+            ekleyip silebilirsin. Her satıra bir isim yaz. Değişiklik sonrası <strong>"Ayarları Kaydet"</strong> 
+            butonuna basmayı unutma — listeler Google Sheets'e işlenir ve formlarda görünür.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">💾 Yedekleme</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            <strong>"Yedek Al"</strong> butonu ile tüm verileri JSON dosyası olarak bilgisayarına indirebilirsin. 
+            <strong>"Yedek Yükle"</strong> ile önceki bir yedeği geri yükleyebilirsin. 
+            Önemli aşamalarda yedek almak iyi bir alışkanlıktır.
+          </div>
+        </details>
+
+        <details style="margin-bottom:10px;">
+          <summary style="cursor:pointer;font-weight:600;color:#1F3D5C;padding:6px 0;">🔄 Veri Senkronizasyonu</summary>
+          <div style="padding:8px 4px;line-height:1.6;font-size:13px;color:#2C3E50;">
+            Tüm veriler Google Sheets'te tutulur. Birden fazla kişi aynı anda kullanabilir. 
+            Başka bir kullanıcı değişiklik yaptıysa, sağ üstteki <strong>"Tazele"</strong> butonuna 
+            basarak en güncel halini çekebilirsin. Sayfa kendiliğinden de düzenli aralıklarla tazelenir.
+          </div>
+        </details>
+
+        <div style="background:#FFF8E1;border-left:4px solid #F9A825;padding:10px 12px;margin-top:14px;border-radius:6px;font-size:13px;line-height:1.55;color:#5D4037;">
+          <strong>💡 İpucu:</strong> Sorun yaşarsan veya yeni bir özellik istersen sistem yöneticisine bildir. 
+          Tüm değişiklikler Google Sheets üzerinde geçmişiyle birlikte tutulur — kayıp veri olmaz.
         </div>
       </div>
     </div>
