@@ -2441,11 +2441,19 @@ function renderMontorReport() {
     });
   });
 
-  const rows = montors.map(m => {
+  // Toplam değerine göre büyükten küçüğe sırala; eşitlikte alfabetik
+  const sortedMontors = montors.slice().sort((a, b) => {
+    const tA = (stats[a] || {}).total || 0;
+    const tB = (stats[b] || {}).total || 0;
+    if (tB !== tA) return tB - tA;
+    return a.localeCompare(b, 'tr');
+  });
+
+  const rows = sortedMontors.map(m => {
     const st = stats[m] || { total: 0, open: 0, done: 0, urgent: 0 };
     return `<tr>
       <td style="font-weight:600;">${esc(m)}</td>
-      <td style="text-align:center;">${st.total}</td>
+      <td style="text-align:center;font-weight:600;">${st.total}</td>
       <td style="text-align:center;color:var(--primary);">${st.open}</td>
       <td style="text-align:center;color:#16a34a;">${st.done}</td>
       <td style="text-align:center;color:#dc2626;">${st.urgent}</td>
