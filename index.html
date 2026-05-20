@@ -772,7 +772,7 @@
 
     .item-summary-row {
       display: grid;
-      grid-template-columns: 42px 1.1fr .8fr .8fr 1.4fr;
+      grid-template-columns: 42px 1.1fr .8fr .8fr .7fr 1.3fr;
       gap: 8px;
       padding: 8px 10px;
       border-bottom: 1px solid var(--line);
@@ -792,7 +792,8 @@
       .item-summary-row > div:nth-child(n+3)::before { color: var(--muted); font-weight: 900; margin-right: 4px; }
       .item-summary-row > div:nth-child(3)::before { content: 'Ürün Kodu:'; }
       .item-summary-row > div:nth-child(4)::before { content: 'Parça Kodu:'; }
-      .item-summary-row > div:nth-child(5)::before { content: 'Sorun:'; }
+      .item-summary-row > div:nth-child(5)::before { content: 'FIORI:'; }
+      .item-summary-row > div:nth-child(6)::before { content: 'Sorun:'; }
     }
 
     .print-only { display: none; }
@@ -939,6 +940,7 @@
     <button class="tab" data-tab="raporlar" onclick="switchTab('raporlar')">Raporlar</button>
     <button class="tab role-user" data-tab="ayarlar" onclick="switchTab('ayarlar')">Ayarlar</button>
     <button class="tab role-admin" data-tab="kullanicilar" onclick="switchTab('kullanicilar')">Kullanıcılar</button>
+    <button class="tab role-admin" data-tab="girisGecmisi" onclick="switchTab('girisGecmisi')">Giriş Geçmişi</button>
   </div>
 
   <section class="panel active" id="panel-dashboard">
@@ -1039,10 +1041,11 @@
             <div class="field-4"><label>Durum</label><select id="nStatus"></select></div>
             <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="nMontorList" class="montor-check-list"></div></div>
             <div class="field-4"><label>Hale Servis No</label><input id="nOrderNo" placeholder="Otomatik oluşur" /></div>
-            <div class="field-4"><label>FIORI Bildirim No</label><input id="nFioriNo" placeholder="FIORI bildirim no" /></div>
+            
             <div class="field-4"><label>Ürün kurulum tarihi</label><input id="nShipmentDate" type="date" /></div>
             <div class="field-4"><label>Yedek parça sipariş tarihi</label><input id="nPartOrderDate" type="date" /></div>
             <div class="field-4"><label>Yedek parça termin tarihi</label><input id="nPartArrivalDate" type="date" /></div>
+            <div class="field-12 work-orders-field"><label>İş Emirleri <small style="font-weight:400;color:#888;">(her satır otomatik numaralanır)</small></label><textarea id="nWorkOrders" placeholder="Müşteri evine gidildi parça takıldı&#10;Parça arızalı çıktı yeni sipariş açıldı&#10;Müşteriye bilgi verildi" rows="4"></textarea></div>
             <div class="field-12"><label>Genel Not</label><textarea id="nNote" placeholder="Müşteri arandı, parça beklenecek, servis yönlendirilecek vb."></textarea></div>
           </div>
         </div>
@@ -1057,6 +1060,7 @@
             <div class="field-3"><label>Ürün kodu</label><input id="iProductCode" placeholder="Örn: VLN-3K-001" /></div>
             <div class="field-3"><label>Parça kodu</label><input id="iMaterialCode" placeholder="Örn: VLN-AYK-SAG" /></div>
             <div class="field-2"><label>Lot No</label><input id="iLotNo" /></div>
+            <div class="field-3"><label>FIORI Bildirim No <small style="font-weight:400;color:#888;">(bu kaleme özel)</small></label><input id="iFioriNo" placeholder="Örn: 44050644" /></div>
             <div class="field-12"><label>Bu kalemin sorunu</label><textarea id="iProblem" placeholder="Bu ürün/parça için servis sorununu yaz..."></textarea></div>
           </div>
           <div id="nItemsList" class="item-list"></div>
@@ -1268,6 +1272,52 @@
       </div>
     </div>
   </div>
+
+  <section id="panel-girisGecmisi" class="panel role-admin">
+    <div class="grid">
+      <div class="card span-12">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+          <h2 style="margin:0;">🕐 Giriş Geçmişi</h2>
+          <button class="btn" onclick="renderLoginLogs()">↻ Yenile</button>
+        </div>
+
+        <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:16px;">
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">KULLANICI</label>
+            <input id="logFilterUser" placeholder="ör: ahmet.erisik" oninput="renderLoginLogs()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;min-width:200px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">DURUM</label>
+            <select id="logFilterStatus" onchange="renderLoginLogs()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+              <option value="all">Hepsi</option>
+              <option value="success">✓ Başarılı</option>
+              <option value="failure">✗ Başarısız</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">BAŞLANGIÇ</label>
+            <input type="date" id="logFilterFrom" onchange="renderLoginLogs()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">BİTİŞ</label>
+            <input type="date" id="logFilterTo" onchange="renderLoginLogs()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;" />
+          </div>
+          <div>
+            <label style="font-size:12px;color:var(--muted);display:block;margin-bottom:4px;">LIMIT</label>
+            <select id="logFilterLimit" onchange="renderLoginLogs()" style="padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;">
+              <option value="100">Son 100</option>
+              <option value="200" selected>Son 200</option>
+              <option value="500">Son 500</option>
+              <option value="1000">Son 1000</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="loginLogsSummary" style="margin-bottom:12px;font-size:13px;color:var(--muted);"></div>
+        <div id="loginLogsTable"></div>
+      </div>
+    </div>
+  </section>
 </div>
 
 <div class="modal" id="editModal">
@@ -1290,7 +1340,7 @@
       <div class="field-12"><label>Adres</label><textarea id="eAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
 
       <div class="field-4"><label>Hale Servis No</label><input id="eOrderNo" /></div>
-      <div class="field-4"><label>FIORI Bildirim No</label><input id="eFioriNo" placeholder="FIORI bildirim no" /></div>
+      
       <div class="field-4"><label>Ürün kurulum tarihi</label><input id="eShipmentDate" type="date" /></div>
       <div class="field-4"><label>Öncelik</label><select id="ePriority"></select></div>
       <div class="field-4"><label>Satış danışmanı</label><input id="eSalesPerson" /></div>
@@ -1313,12 +1363,13 @@
           <div class="field-3"><label>Ürün kodu</label><input id="eiProductCode" /></div>
           <div class="field-3"><label>Parça kodu</label><input id="eiMaterialCode" /></div>
           <div class="field-2"><label>Lot No</label><input id="eiLotNo" /></div>
+          <div class="field-3"><label>FIORI Bildirim No <small style="font-weight:400;color:#888;">(bu kaleme özel)</small></label><input id="eiFioriNo" placeholder="Örn: 44050644" /></div>
           <div class="field-12"><label>Bu kalemin sorunu</label><textarea id="eiProblem"></textarea></div>
         </div>
         <div id="eItemsList" class="item-list"></div>
       </div>
 
-      <div class="field-12"><label>İş Emirleri <small style="font-weight:400;color:#888;">(her satır otomatik numaralanır)</small></label><textarea id="eWorkOrders" placeholder="Müşteri evine gidildi parça takıldı&#10;Parça arızalı çıktı yeni sipariş açıldı" rows="4"></textarea></div>
+      <div class="field-12 work-orders-field"><label>İş Emirleri <small style="font-weight:400;color:#888;">(her satır otomatik numaralanır)</small></label><textarea id="eWorkOrders" placeholder="Müşteri evine gidildi parça takıldı&#10;Parça arızalı çıktı yeni sipariş açıldı" rows="4"></textarea></div>
       <div class="field-12"><label>Genel Not</label><textarea id="eNote"></textarea></div>
       <div class="field-12"><label>İşlem geçmişi notu</label><input id="eHistoryNote" placeholder="Örn: Müşteri arandı, parça siparişi geçildi..." /></div>
     </div>
@@ -1616,6 +1667,7 @@ function normalizeServiceItem(item = {}) {
     productCode: item.productCode || '',
     materialCode: item.materialCode || '',
     lotNo: item.lotNo || '',
+    fioriNo: item.fioriNo || '',
     problem: item.problem || ''
   };
 }
@@ -1632,6 +1684,16 @@ function getRecordItems(record) {
     problem: record.problem
   })].filter(x => x.productName || x.productCode || x.materialCode || x.problem || x.lotNo);
 }
+
+function getRecordFioris(r) {
+  const items = getRecordItems(r);
+  const list = items.map(i => i.fioriNo).filter(f => f && String(f).trim());
+  // Eski kayıtlardan gelen record-level fioriNo geçiş
+  if (r.fioriNo && !list.length) list.push(r.fioriNo);
+  return Array.from(new Set(list));
+}
+
+
 
 function syncLegacyFields(record) {
   const first = getRecordItems(record)[0] || normalizeServiceItem();
@@ -1732,6 +1794,81 @@ async function renderUsersList() {
   }
 }
 
+async function renderLoginLogs() {
+  const tableEl = document.getElementById('loginLogsTable');
+  const summaryEl = document.getElementById('loginLogsSummary');
+  if (!tableEl) return;
+  tableEl.innerHTML = '<div style="color:#94A3B8;font-size:13px;padding:20px;text-align:center;">Yükleniyor...</div>';
+
+  const username = (document.getElementById('logFilterUser')?.value || '').trim();
+  const status = document.getElementById('logFilterStatus')?.value || 'all';
+  const from = document.getElementById('logFilterFrom')?.value || '';
+  const to = document.getElementById('logFilterTo')?.value || '';
+  const limit = parseInt(document.getElementById('logFilterLimit')?.value || '200', 10);
+
+  try {
+    const json = await apiCall('getLoginLogs', { username, from, to, limit });
+    let logs = json.logs || [];
+    if (status === 'success') logs = logs.filter(l => l.success);
+    else if (status === 'failure') logs = logs.filter(l => !l.success);
+
+    if (logs.length === 0) {
+      tableEl.innerHTML = '<div style="color:#94A3B8;padding:30px;text-align:center;background:#F8FAFC;border-radius:8px;">Bu kriterlere uyan giriş kaydı yok.</div>';
+      summaryEl.textContent = '';
+      return;
+    }
+
+    const successCount = logs.filter(l => l.success).length;
+    const failureCount = logs.length - successCount;
+    summaryEl.innerHTML = `
+      <span style="color:#1F3D5C;font-weight:600;">Toplam: ${logs.length}</span> · 
+      <span style="color:#16A34A;">✓ Başarılı: ${successCount}</span> · 
+      <span style="color:#DC2626;">✗ Başarısız: ${failureCount}</span>
+    `;
+
+    tableEl.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:#F1F5F9;border-bottom:2px solid var(--border);">
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">TARİH / SAAT</th>
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">KULLANICI</th>
+              <th style="text-align:center;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">DURUM</th>
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">TARAYICI</th>
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">İŞLETİM SİSTEMİ</th>
+              <th style="text-align:left;padding:10px 12px;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:0.3px;">AÇIKLAMA</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${logs.map(l => {
+              const dt = new Date(l.at);
+              const dtStr = isNaN(dt.getTime()) ? esc(l.at) : dt.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+              const bg = l.success ? '#FFFFFF' : '#FEF2F2';
+              const statusBadge = l.success
+                ? '<span style="background:#DCFCE7;color:#15803D;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">✓ Başarılı</span>'
+                : '<span style="background:#FEE2E2;color:#991B1B;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;">✗ Başarısız</span>';
+              return `<tr style="background:${bg};border-bottom:1px solid #F1F5F9;">
+                <td style="padding:10px 12px;color:#1F3D5C;font-weight:500;white-space:nowrap;">${dtStr}</td>
+                <td style="padding:10px 12px;">
+                  <div style="font-weight:600;color:#1F3D5C;">${esc(l.fullName || l.username || '—')}</div>
+                  ${l.fullName ? `<div style="font-size:11px;color:#64748B;">@${esc(l.username)}</div>` : ''}
+                </td>
+                <td style="padding:10px 12px;text-align:center;">${statusBadge}</td>
+                <td style="padding:10px 12px;color:#475569;">${esc(l.browser || '—')}</td>
+                <td style="padding:10px 12px;color:#475569;">${esc(l.os || '—')}</td>
+                <td style="padding:10px 12px;color:#64748B;font-size:12px;">${esc(l.reason || (l.success ? '' : '—'))}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } catch(e) {
+    tableEl.innerHTML = '<div style="color:#DC2626;padding:20px;text-align:center;">Hata: ' + esc(e.message) + '</div>';
+    summaryEl.textContent = '';
+  }
+}
+
 function openAddUserModal() {
   document.getElementById('addUserModal').classList.add('open');
   document.getElementById('auUsername').value = '';
@@ -1814,6 +1951,26 @@ async function deleteUserConfirm(username, fullName) {
 
 // ============= AUTH FONKSİYONLARI =============
 
+function detectClientInfo() {
+  var ua = navigator.userAgent || '';
+  var browser = 'Bilinmiyor';
+  var os = 'Bilinmiyor';
+  // Browser tespiti
+  if (ua.indexOf('Edg/') >= 0) browser = 'Edge';
+  else if (ua.indexOf('OPR/') >= 0 || ua.indexOf('Opera') >= 0) browser = 'Opera';
+  else if (ua.indexOf('Chrome/') >= 0) browser = 'Chrome';
+  else if (ua.indexOf('Safari/') >= 0 && ua.indexOf('Chrome') < 0) browser = 'Safari';
+  else if (ua.indexOf('Firefox/') >= 0) browser = 'Firefox';
+  // OS tespiti
+  if (ua.indexOf('Windows NT 10') >= 0) os = 'Windows 10/11';
+  else if (ua.indexOf('Windows NT') >= 0) os = 'Windows';
+  else if (ua.indexOf('Mac OS X') >= 0) os = 'macOS';
+  else if (ua.indexOf('Android') >= 0) os = 'Android';
+  else if (ua.indexOf('iPhone') >= 0 || ua.indexOf('iPad') >= 0) os = 'iOS';
+  else if (ua.indexOf('Linux') >= 0) os = 'Linux';
+  return { browser: browser, os: os };
+}
+
 function showLoginScreen() {
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginError').style.display = 'none';
@@ -1842,10 +1999,11 @@ async function handleLogin(e) {
   btn.disabled = true;
   btn.textContent = 'Giriş yapılıyor...';
   try {
+    const clientInfo = detectClientInfo();
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: 'login', data: { username, password } })
+      body: JSON.stringify({ action: 'login', data: { username, password, clientInfo } })
     });
     const json = await res.json();
     if (!json.ok) {
@@ -1961,6 +2119,11 @@ function applyRolePermissions() {
     css += 'input:not(#loginUsername):not(#loginPassword):not(#cpOldPassword):not(#cpNewPassword):not(#cpNewPassword2), textarea, select { pointer-events:none; background:#F8FAFC !important; }';
   } else if (role === 'user') {
     css += '.role-admin, .role-manager-up { display:none !important; }';
+    // User rolü İş Emirleri alanını göremesin ve yazamasın
+    css += '#nWorkOrders, #eWorkOrders { display:none !important; }';
+    css += 'label[for="nWorkOrders"], label[for="eWorkOrders"] { display:none !important; }';
+    // İş Emirleri label'larını içeren field'ları gizle
+    css += '.work-orders-field { display:none !important; }';
   } else if (role === 'manager') {
     css += '.role-admin { display:none !important; }';
   }
@@ -2069,6 +2232,7 @@ function switchTab(tab) {
   if (tab === 'kayitlar') renderRecords();
   if (tab === 'raporlar') renderReports();
   if (tab === 'kullanicilar') renderUsersList();
+  if (tab === 'girisGecmisi') renderLoginLogs();
 }
 
 function fillAllSelects() {
@@ -2195,7 +2359,7 @@ function renderRecords() {
     list = list.filter(r => [
       r.customer, r.customerCode, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
       r.productName, r.productCode, r.materialCode, r.orderNo, r.problem,
-      r.note, r.status, r.priority, getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.problem].join(' ')).join(' ')
+      r.note, r.status, r.priority, r.fioriNo || '', getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.fioriNo, i.problem].join(' ')).join(' ')
     ].join(' ').toLowerCase().includes(q));
   }
 
@@ -2225,17 +2389,18 @@ function renderItemSummaryRows(r) {
   if (!items.length) return '';
   return `
     <div class="item-summary">
-      <div class="item-summary-row item-summary-head"><div>No</div><div>Ürün</div><div>Ürün Kodu</div><div>Parça Kodu</div><div>Sorun</div></div>
+      <div class="item-summary-row item-summary-head"><div>No</div><div>Ürün</div><div>Ürün Kodu</div><div>Parça Kodu</div><div>FIORI No</div><div>Sorun</div></div>
       ${items.slice(0, 4).map((it, idx) => `
         <div class="item-summary-row">
           <div><strong>${idx + 1}</strong></div>
           <div><strong>${esc(it.productName || '—')}</strong></div>
           <div>${esc(it.productCode || '—')}</div>
           <div>${esc(it.materialCode || '—')}</div>
+          <div>${esc(it.fioriNo || '—')}</div>
           <div>${esc(it.problem || '—')}</div>
         </div>
       `).join('')}
-      ${items.length > 4 ? `<div class="item-summary-row"><div></div><div colspan="4"><strong>+ ${items.length - 4} kalem daha</strong></div><div></div><div></div><div>Düzenle veya yazdır bölümünde tüm kalemler görünür.</div></div>` : ''}
+      ${items.length > 4 ? `<div class="item-summary-row"><div></div><div><strong>+ ${items.length - 4} kalem daha</strong></div><div></div><div></div><div></div><div>Düzenle veya yazdır bölümünde tüm kalemler görünür.</div></div>` : ''}
     </div>`;
 }
 
@@ -2267,7 +2432,7 @@ function recordCard(r) {
         <div><div class="k">Sorumlu</div><div class="v">${esc(r.responsible || '—')}</div></div>
         <div><div class="k">Satış danışmanı</div><div class="v">${esc(r.salesPerson || '—')}</div></div>
         <div><div class="k">Hale Servis No</div><div class="v">${esc(r.orderNo || '—')}</div></div>
-        <div><div class="k">FIORI Bildirim No</div><div class="v">${esc(r.fioriNo || '—')}</div></div>
+        <div><div class="k">FIORI Bildirim No</div><div class="v">${esc(getRecordFioris(r).join(', ') || '—')}</div></div>
         <div><div class="k">Ürün kurulum tarihi</div><div class="v">${esc(formatDate(r.shipmentDate) || '—')}</div></div>
         <div><div class="k">Açık gün</div><div class="v">${r.openClosed === 'Kapalı' ? 'Kapalı' : ageDays(r.createdAt) + ' gün'}</div></div>
         ${r.address ? `<div style="grid-column:1/-1;"><div class="k">Adres</div><div class="v" style="white-space:pre-wrap;">${esc(r.address)}</div></div>` : ''}
@@ -2560,9 +2725,10 @@ function addNewItem() {
     productCode: getVal('iProductCode'),
     materialCode: getVal('iMaterialCode'),
     lotNo: getVal('iLotNo'),
+    fioriNo: getVal('iFioriNo'),
     problem: getVal('iProblem')
   }));
-  ['iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'].forEach(id => setVal(id, ''));
+  ['iProductName','iProductCode','iMaterialCode','iLotNo','iFioriNo','iProblem'].forEach(id => setVal(id, ''));
   renderNewItems();
   toast('Servis kalemi eklendi', 'success');
 }
@@ -2584,7 +2750,7 @@ function renderNewItems() {
       <div class="service-item-no">${idx + 1}</div>
       <div>
         <div class="service-item-title">${esc(it.productName || 'Ürün adı yok')}</div>
-        <div class="service-item-sub">${esc([it.productCode && 'Ürün Kodu: ' + it.productCode, it.materialCode && 'Parça Kodu: ' + it.materialCode, it.lotNo && 'Lot: ' + it.lotNo].filter(Boolean).join(' · ') || 'Kod bilgisi yok')}</div>
+        <div class="service-item-sub">${esc([it.productCode && 'Ürün Kodu: ' + it.productCode, it.materialCode && 'Parça Kodu: ' + it.materialCode, it.lotNo && 'Lot: ' + it.lotNo, it.fioriNo && 'FIORI: ' + it.fioriNo].filter(Boolean).join(' · ') || 'Kod bilgisi yok')}</div>
         ${it.problem ? `<div class="service-item-problem"><strong>Sorun:</strong> ${esc(it.problem)}</div>` : ''}
       </div>
       <button class="btn small danger" onclick="removeNewItem(${idx})" type="button">Sil</button>
@@ -2631,7 +2797,7 @@ async function createRecord() {
 
 function clearNewForm(showToast = true) {
   [
-    'nCustomer','nCustomerCode','nResponsible','nFioriNo','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
+    'nCustomer','nCustomerCode','nResponsible','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
   renderMontorChecks('nMontorList', []);
@@ -2677,7 +2843,6 @@ function openEdit(id) {
   setVal('eBranch', r.branch);
   renderMontorChecks('eMontorList', r.montors || '');
   setVal('eOrderNo', r.orderNo);
-  setVal('eFioriNo', r.fioriNo);
   setVal('eShipmentDate', toDateInputValue(r.shipmentDate));
   setVal('ePriority', r.priority);
   setVal('eSalesPerson', r.salesPerson);
@@ -2688,7 +2853,7 @@ function openEdit(id) {
   setVal('eDeliveryDate', toDateInputValue(r.deliveryDate));
   setVal('eNote', r.note);
   setVal('eHistoryNote', '');
-  ['eiProductName','eiProductCode','eiMaterialCode','eiLotNo','eiProblem'].forEach(id => setVal(id, ''));
+  ['eiProductName','eiProductCode','eiMaterialCode','eiLotNo','eiFioriNo','eiProblem'].forEach(id => setVal(id, ''));
   renderEditItems();
   document.getElementById('historyBox').innerHTML = '';
   document.getElementById('editModal').classList.add('open');
@@ -2706,6 +2871,7 @@ function addEditItem() {
     productCode: getVal('eiProductCode'),
     materialCode: getVal('eiMaterialCode'),
     lotNo: getVal('eiLotNo'),
+    fioriNo: getVal('eiFioriNo'),
     problem: getVal('eiProblem')
   });
 
@@ -2722,7 +2888,7 @@ function addEditItem() {
 }
 
 function clearEditItemForm() {
-  ['eiProductName','eiProductCode','eiMaterialCode','eiLotNo','eiProblem'].forEach(id => setVal(id, ''));
+  ['eiProductName','eiProductCode','eiMaterialCode','eiLotNo','eiFioriNo','eiProblem'].forEach(id => setVal(id, ''));
   state.editItemIndex = null;
   const actionBtn = document.getElementById('eItemActionBtn');
   const cancelBtn = document.getElementById('eItemCancelBtn');
@@ -2738,6 +2904,7 @@ function editEditItem(index) {
   setVal('eiProductCode', item.productCode || '');
   setVal('eiMaterialCode', item.materialCode || '');
   setVal('eiLotNo', item.lotNo || '');
+  setVal('eiFioriNo', item.fioriNo || '');
   setVal('eiProblem', item.problem || '');
   const actionBtn = document.getElementById('eItemActionBtn');
   const cancelBtn = document.getElementById('eItemCancelBtn');
@@ -2771,7 +2938,7 @@ function renderEditItems() {
       <div class="service-item-no">${idx + 1}</div>
       <div>
         <div class="service-item-title">${esc(it.productName || 'Ürün adı yok')}</div>
-        <div class="service-item-sub">${esc([it.productCode && 'Ürün Kodu: ' + it.productCode, it.materialCode && 'Parça Kodu: ' + it.materialCode, it.lotNo && 'Lot: ' + it.lotNo].filter(Boolean).join(' · ') || 'Kod bilgisi yok')}</div>
+        <div class="service-item-sub">${esc([it.productCode && 'Ürün Kodu: ' + it.productCode, it.materialCode && 'Parça Kodu: ' + it.materialCode, it.lotNo && 'Lot: ' + it.lotNo, it.fioriNo && 'FIORI: ' + it.fioriNo].filter(Boolean).join(' · ') || 'Kod bilgisi yok')}</div>
         ${it.problem ? `<div class="service-item-problem"><strong>Sorun:</strong> ${esc(it.problem)}</div>` : ''}
       </div>
       <div class="service-item-actions">
@@ -2938,7 +3105,7 @@ function copyWhatsappText(id) {
 function buildWhatsappMessage(r) {
   const name = r.customer || 'Değerli müşterimiz';
   const haleNo = r.orderNo ? `\nHale Servis No: ${r.orderNo}` : '';
-  const fioriNo = r.fioriNo ? `\nFIORI Bildirim No: ${r.fioriNo}` : '';
+  const fiorisAll = getRecordFioris(r); const fioriNo = fiorisAll.length ? `\nFIORI Bildirim No: ${fiorisAll.join(', ')}` : '';
   const product = getRecordItems(r).length ? `\nServis Kalemleri: ${getRecordItems(r).map((i, idx) => `${idx + 1}) ${i.productName}${i.materialCode ? ' / ' + i.materialCode : ''}`).join(' | ')}` : '';
   const status = (r.status || '').toLowerCase();
 
@@ -3120,7 +3287,7 @@ function printServiceForm(id, selectedItemIds) {
     ['Şube', r.branch],
     ['Satış Danışmanı', r.salesPerson],
     ['Hale Servis No', r.orderNo],
-    ['FIORI Bildirim No', r.fioriNo],
+    ['FIORI Bildirim No', getRecordFioris(r).join(', ')],
     ['Ürün Kurulum Tarihi', formatDate(r.shipmentDate)],
     ['Yedek Parça Sipariş Tarihi', formatDate(r.partOrderDate)],
     ['Yedek Parça Termin Tarihi', formatDate(r.partArrivalDate)],
@@ -3143,6 +3310,7 @@ function printServiceForm(id, selectedItemIds) {
       <td>${deferredNote}<strong>${esc(it.productName || '—')}</strong>${hasPrintValue(it.lotNo) ? `<br><span>Lot: ${esc(it.lotNo)}</span>` : ''}</td>
       <td>${esc(it.productCode || '—')}</td>
       <td>${esc(it.materialCode || '—')}</td>
+      <td>${esc(it.fioriNo || '—')}</td>
       <td>${esc(it.problem || '—')}</td>
     </tr>
   `;}).join('');
@@ -3222,7 +3390,7 @@ function printServiceForm(id, selectedItemIds) {
       <table class="print-table">${compactRows}</table>
       <div class="items-title">Servis Kalemleri</div>
       <table class="print-items">
-        <thead><tr><th>No</th><th>Ürün / Lot</th><th>Ürün Kodu</th><th>Parça Kodu</th><th>Sorun / Açıklama</th></tr></thead>
+        <thead><tr><th>No</th><th>Ürün / Lot</th><th>Ürün Kodu</th><th>Parça Kodu</th><th>FIORI No</th><th>Sorun / Açıklama</th></tr></thead>
         <tbody>${itemRows}</tbody>
       </table>
       ${r.workOrders ? `<div class="print-work-orders-box">
@@ -3264,7 +3432,7 @@ function exportCsv() {
   ];
   const rows = state.records.map(r => [
     formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
-    r.productName, r.productCode, r.materialCode, r.orderNo, r.fioriNo, r.lotNo, formatDate(r.shipmentDate), formatDate(r.partOrderDate),
+    r.productName, r.productCode, r.materialCode, r.orderNo, getRecordFioris(r).join('; '), r.lotNo, formatDate(r.shipmentDate), formatDate(r.partOrderDate),
     formatDate(r.partArrivalDate), formatDate(r.deliveryDate), r.status, r.priority, r.openClosed, r.problem, r.note
   ]);
 
