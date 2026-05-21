@@ -1036,9 +1036,10 @@
             <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
             <div class="field-3"><label>Şube</label><select id="nBranch"></select></div>
             <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
-            <div class="field-4"><label>Sorumlu personel</label><input id="nResponsible" /></div>
-            <div class="field-4"><label>Öncelik</label><select id="nPriority"></select></div>
-            <div class="field-4"><label>Durum</label><select id="nStatus"></select></div>
+            <div class="field-3"><label>Satış Danışmanı *</label><select id="nSalesPerson"></select></div>
+            <div class="field-3"><label>Sorumlu personel</label><input id="nResponsible" /></div>
+            <div class="field-3"><label>Öncelik</label><select id="nPriority"></select></div>
+            <div class="field-3"><label>Durum</label><select id="nStatus"></select></div>
             <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="nMontorList" class="montor-check-list"></div></div>
             <div class="field-4"><label>Hale Servis No</label><input id="nOrderNo" placeholder="Otomatik oluşur" /></div>
             
@@ -1098,6 +1099,10 @@
           <div class="field-12">
             <label>Montörler <span class="muted" style="font-weight:400;font-size:12px;">(her satıra bir isim)</span></label>
             <textarea id="settingsMontors" placeholder="Ali Yılmaz&#10;Mehmet Kaya&#10;Hasan Demir"></textarea>
+          </div>
+          <div class="field-12">
+            <label>Satış Danışmanları <span class="muted" style="font-weight:400;font-size:12px;">(her satıra bir isim)</span></label>
+            <textarea id="settingsSalesPersons" placeholder="Ebru Cingöz&#10;Serdar Çadır&#10;Hacer Demirci"></textarea>
           </div>
         </div>
         <div class="settings-backup">
@@ -1343,7 +1348,7 @@
       
       <div class="field-4"><label>Ürün kurulum tarihi</label><input id="eShipmentDate" type="date" /></div>
       <div class="field-4"><label>Öncelik</label><select id="ePriority"></select></div>
-      <div class="field-4"><label>Satış danışmanı</label><input id="eSalesPerson" /></div>
+      <div class="field-4"><label>Satış Danışmanı</label><select id="eSalesPerson"></select></div>
       <div class="field-4"><label>Durum</label><select id="eStatus"></select></div>
       <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="eMontorList" class="montor-check-list"></div></div>
       <div class="field-4"><label>Yedek parça sipariş tarihi</label><input id="ePartOrderDate" type="date" /></div>
@@ -1412,7 +1417,8 @@ const DEFAULT_SETTINGS = {
   ],
   branches: ['OPTIMALL MAĞAZA', 'TALAS MAĞAZA', 'MONDI MAĞAZA'],
   priorities: ['Normal', 'Acil', 'Kritik'],
-  montors: []
+  montors: [],
+  salesPersons: []
 };
 
 const BRANCH_DISPLAY_NAMES = {
@@ -2180,7 +2186,8 @@ async function boot() {
       statuses: data.settings?.statuses?.length ? data.settings.statuses : DEFAULT_SETTINGS.statuses,
       branches: normalizeBranchList(data.settings?.branches?.length ? data.settings.branches : DEFAULT_SETTINGS.branches),
       priorities: data.settings?.priorities?.length ? data.settings.priorities : DEFAULT_SETTINGS.priorities,
-      montors: Array.isArray(data.settings?.montors) ? data.settings.montors : []
+      montors: Array.isArray(data.settings?.montors) ? data.settings.montors : [],
+      salesPersons: Array.isArray(data.settings?.salesPersons) ? data.settings.salesPersons : []
     };
   } catch (e) {
     // Token geçersizse showLoginScreen apiCall'da çağrıldı
@@ -2243,6 +2250,9 @@ function fillAllSelects() {
   ['nStatus','eStatus'].forEach(id => fillSelect(id, state.settings.statuses));
   ['nBranch','eBranch'].forEach(id => fillSelect(id, state.settings.branches));
   ['nPriority','ePriority'].forEach(id => fillSelect(id, state.settings.priorities));
+  const sp = state.settings.salesPersons || [];
+  fillSelect('nSalesPerson', [''].concat(sp), ['— Seçiniz —'].concat(sp));
+  fillSelect('eSalesPerson', [''].concat(sp), ['— Seçiniz —'].concat(sp));
 
   renderMontorChecks('nMontorList', []);
   renderMontorChecks('eMontorList', []);
@@ -2773,7 +2783,7 @@ async function createRecord() {
     address: getVal('nAddress'),
     branch: normalizeBranchName(getVal('nBranch')),
     montors: getMontorChecks('nMontorList'),
-    salesPerson: getVal('nResponsible'),
+    salesPerson: getVal('nSalesPerson'),
     responsible: getVal('nResponsible'),
     orderNo: getVal('nOrderNo'),  // boşsa backend üretir
     fioriNo: getVal('nFioriNo'),
@@ -2797,7 +2807,7 @@ async function createRecord() {
 
 function clearNewForm(showToast = true) {
   [
-    'nCustomer','nCustomerCode','nResponsible','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
+    'nCustomer','nCustomerCode','nResponsible','nSalesPerson','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
   renderMontorChecks('nMontorList', []);
@@ -3457,6 +3467,7 @@ function fillSettings() {
   setVal('settingsBranches', state.settings.branches.join('\n'));
   setVal('settingsPriorities', state.settings.priorities.join('\n'));
   setVal('settingsMontors', (state.settings.montors || []).join('\n'));
+  setVal('settingsSalesPersons', (state.settings.salesPersons || []).join('\n'));
 }
 
 async function saveSettings() {
@@ -3464,7 +3475,8 @@ async function saveSettings() {
     statuses: lines('settingsStatuses'),
     branches: normalizeBranchList(lines('settingsBranches')),
     priorities: lines('settingsPriorities'),
-    montors: lines('settingsMontors')
+    montors: lines('settingsMontors'),
+    salesPersons: lines('settingsSalesPersons')
   };
   const ok = await DB.saveSettings(state.settings);
   if (!ok) return;
