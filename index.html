@@ -1033,7 +1033,7 @@
           <div class="form-grid">
             <div class="field-3"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" /></div>
             <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="nCustomerCode" placeholder="ör: 12100042" /></div>
-            <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
+            <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
             <div class="field-3"><label>Şube</label><select id="nBranch"></select></div>
             <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
             <div class="field-3"><label>Satış Danışmanı *</label><select id="nSalesPerson"></select></div>
@@ -1340,7 +1340,7 @@
     <div class="form-grid">
       <div class="field-3"><label>Müşteri</label><input id="eCustomer" /></div>
       <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="eCustomerCode" placeholder="ör: 12100042" /></div>
-      <div class="field-3"><label>Telefon</label><input id="ePhone" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
+      <div class="field-3"><label>Telefon</label><input id="ePhone" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
       <div class="field-3"><label>Şube</label><select id="eBranch"></select></div>
       <div class="field-12"><label>Adres</label><textarea id="eAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
 
@@ -1487,7 +1487,13 @@ async function apiCall(action, data) {
     body: JSON.stringify(body)
   });
   if (!res.ok) throw new Error('HTTP ' + res.status);
-  const json = await res.json();
+  let json;
+  try {
+    json = await res.json();
+  } catch (parseErr) {
+    // Sunucudan JSON yerine başka bir şey geldi (HTML hata sayfası vb.)
+    throw new Error('Sunucu yanıtı okunamadı. Lütfen tekrar deneyin.');
+  }
   if (!json.ok) {
     // Token geçersizse login ekranını göster
     if (json.code === 'NO_AUTH') {
@@ -3157,13 +3163,13 @@ function ensurePhonePrefix(input) {
 }
 
 function formatTurkeyPhoneInput(input) {
-  let v = input.value || '';
+  let v = String(input.value || '').normalize('NFKD').replace(/[^\u0020-\u007F]/g, '');
 
   if (!v.startsWith('+90')) {
-    v = '+90 ' + v.replace(/[^\d]/g, '').replace(/^90/, '').replace(/^0/, '');
+    v = '+90 ' + v.replace(/[^0-9]/g, '').replace(/^90/, '').replace(/^0/, '');
   }
 
-  let digits = v.replace(/[^\d]/g, '');
+  let digits = v.replace(/[^0-9]/g, '');
   if (digits.startsWith('90')) digits = digits.slice(2);
   if (digits.startsWith('0')) digits = digits.slice(1);
   digits = digits.slice(0, 10);
@@ -3178,7 +3184,9 @@ function formatTurkeyPhoneInput(input) {
 }
 
 function normalizePhoneDisplay(phone) {
-  let digits = String(phone || '').replace(/[^\d]/g, '');
+  // Önce tüm UTF-8 garip karakterleri ASCII'ye zorla
+  let raw = String(phone || '').normalize('NFKD').replace(/[^\u0020-\u007F]/g, '');
+  let digits = raw.replace(/[^0-9]/g, '');
   if (!digits) return '+90 ';
   if (digits.startsWith('90')) digits = digits.slice(2);
   if (digits.startsWith('0')) digits = digits.slice(1);
