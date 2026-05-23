@@ -1031,7 +1031,7 @@
             <span class="muted" style="font-size:12px;">Tek müşteri kaydına birden fazla ürün/parça eklenebilir.</span>
           </div>
           <div class="form-grid">
-            <div class="field-3"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" /></div>
+            <div class="field-3"><label>Müşteri *</label><input id="nCustomer" placeholder="Ad soyad" style="text-transform:uppercase;" oninput="this.value=upperTr(this.value)" /></div>
             <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="nCustomerCode" placeholder="ör: 12100042" /></div>
             <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
             <div class="field-3"><label>Şube</label><select id="nBranch"></select></div>
@@ -1338,7 +1338,7 @@
     <input type="hidden" id="eId" />
 
     <div class="form-grid">
-      <div class="field-3"><label>Müşteri</label><input id="eCustomer" /></div>
+      <div class="field-3"><label>Müşteri</label><input id="eCustomer" style="text-transform:uppercase;" oninput="this.value=upperTr(this.value)" /></div>
       <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="eCustomerCode" placeholder="ör: 12100042" /></div>
       <div class="field-3"><label>Telefon</label><input id="ePhone" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
       <div class="field-3"><label>Şube</label><select id="eBranch"></select></div>
@@ -2775,7 +2775,7 @@ function renderNewItems() {
 }
 
 async function createRecord() {
-  const customer = getVal('nCustomer');
+  const customer = upperTr(getVal('nCustomer'));
   if (!customer || !state.newItems.length) {
     toast('Müşteri ve en az 1 servis kalemi zorunlu', 'error');
     return;
@@ -2977,7 +2977,7 @@ async function saveEdit() {
   }
   const first = state.editItems[0] || normalizeServiceItem();
   const patch = {
-    customer: getVal('eCustomer'),
+    customer: upperTr(getVal('eCustomer')),
     customerCode: getVal('eCustomerCode'),
     phone: normalizePhoneDisplay(getVal('ePhone')),
     address: getVal('eAddress'),
@@ -3181,6 +3181,20 @@ function formatTurkeyPhoneInput(input) {
   if (digits.length > 8) formatted += ' ' + digits.slice(8, 10);
 
   input.value = formatted + (digits.length === 0 ? ' ' : '');
+}
+
+function upperTr(str) {
+  // Türkçe karakterleri doğru şekilde büyük harfe çevirir
+  // i → İ, ı → I, ç → Ç, ğ → Ğ, ö → Ö, ş → Ş, ü → Ü
+  return String(str || '')
+    .replace(/i/g, 'İ')
+    .replace(/ı/g, 'I')
+    .replace(/ç/g, 'Ç')
+    .replace(/ğ/g, 'Ğ')
+    .replace(/ö/g, 'Ö')
+    .replace(/ş/g, 'Ş')
+    .replace(/ü/g, 'Ü')
+    .toUpperCase();
 }
 
 function normalizePhoneDisplay(phone) {
