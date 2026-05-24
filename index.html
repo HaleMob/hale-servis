@@ -1686,7 +1686,9 @@ function normalizeServiceItem(item = {}) {
     materialCode: item.materialCode || '',
     lotNo: item.lotNo || '',
     fioriNo: item.fioriNo || '',
-    problem: item.problem || ''
+    problem: item.problem || '',
+    completed: item.completed === true || String(item.completed).toLowerCase() === 'true',
+    completedAt: item.completedAt || ''
   };
 }
 
