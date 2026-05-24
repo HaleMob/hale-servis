@@ -1566,25 +1566,8 @@ const DB = {
   async updateRecord(id, patch, historyNote) {
     try {
       await apiCall('updateRecord', { id, patch, historyNote });
-      // local state'i güncelle (sunucudan ayrıca tam çekmeye gerek yok)
-      const rec = state.records.find(r => r.id === id);
-      if (rec) {
-        const oldStatus = rec.status;
-        Object.assign(rec, patch);
-        syncLegacyFields(rec);
-        rec.updatedAt = new Date().toISOString();
-        rec.openClosed = isClosedStatus(rec.status) ? 'Kapalı' : 'Açık';
-        if (historyNote || oldStatus !== rec.status) {
-          rec.history = rec.history || [];
-          rec.history.unshift({
-            id: 'LOG-' + Date.now(),
-            at: new Date().toISOString(),
-            oldStatus, newStatus: rec.status,
-            note: historyNote || 'Durum güncellendi',
-            user: currentUser()
-          });
-        }
-      }
+      // Tüm history kayıtlarını ve item güncellemelerini sunucudan tazele
+      await this.refresh(true);
       return true;
     } catch (e) {
       toast('Güncelleme başarısız: ' + e.message, 'error');
