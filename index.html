@@ -721,6 +721,9 @@
       gap: 10px;
       align-items: start;
     }
+    .service-item.item-completed { background:#F0FDF4 !important; border-color:#86EFAC !important; }
+    .service-item.item-completed .service-item-title { color:#16A34A; }
+    .item-completed-badge { display:inline-block; background:#16A34A; color:white; font-size:11px; font-weight:700; padding:2px 8px; border-radius:6px; margin-left:8px; letter-spacing:0.3px; }
 
     .service-item-no {
       width: 28px;
@@ -769,6 +772,10 @@
       overflow: hidden;
       background: #fff;
     }
+    .item-summary-status { background:#16A34A; color:white; padding:5px 10px; border-radius:6px; font-size:11px; font-weight:700; margin-bottom:6px; display:inline-block; letter-spacing:0.3px; }
+    .item-summary-row.row-completed { background:#F0FDF4; }
+    .item-summary-row.row-completed > div { opacity:0.85; }
+    .completed-tag { display:inline-block; background:#16A34A; color:white; font-size:9px; font-weight:700; padding:1px 5px; border-radius:4px; margin-left:4px; vertical-align:middle; }
 
     .item-summary-row {
       display: grid;
@@ -1035,9 +1042,8 @@
             <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="nCustomerCode" placeholder="ör: 12100042" /></div>
             <div class="field-3"><label>Telefon</label><input id="nPhone" value="+90 " placeholder="+90 5xx xxx xx xx" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
             <div class="field-3"><label>Şube</label><select id="nBranch"></select></div>
-            <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
+            <div class="field-12"><label>Adres</label><textarea id="nAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..." style="text-transform:uppercase;" oninput="this.value=upperTr(this.value)"></textarea></div>
             <div class="field-3"><label>Satış Danışmanı *</label><select id="nSalesPerson"></select></div>
-            <div class="field-3"><label>Sorumlu personel</label><input id="nResponsible" /></div>
             <div class="field-3"><label>Öncelik</label><select id="nPriority"></select></div>
             <div class="field-3"><label>Durum</label><select id="nStatus"></select></div>
             <div class="field-8"><label>Montör <span class="muted" style="font-weight:400;font-size:12px;">(birden fazla seçilebilir)</span></label><div id="nMontorList" class="montor-check-list"></div></div>
@@ -1342,7 +1348,7 @@
       <div class="field-3"><label>Müşteri Kodu <small style="font-weight:400;color:#888;">(121...)</small></label><input id="eCustomerCode" placeholder="ör: 12100042" /></div>
       <div class="field-3"><label>Telefon</label><input id="ePhone" inputmode="tel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="+90 5xx xxx xx xx" onfocus="ensurePhonePrefix(this)" oninput="formatTurkeyPhoneInput(this)" /></div>
       <div class="field-3"><label>Şube</label><select id="eBranch"></select></div>
-      <div class="field-12"><label>Adres</label><textarea id="eAddress" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
+      <div class="field-12"><label>Adres</label><textarea id="eAddress" style="text-transform:uppercase;" oninput="this.value=upperTr(this.value)" placeholder="Mahalle, cadde/sokak, bina/daire no, adres tarifi..."></textarea></div>
 
       <div class="field-4"><label>Hale Servis No</label><input id="eOrderNo" /></div>
       
@@ -2373,7 +2379,7 @@ function renderRecords() {
 
   if (q) {
     list = list.filter(r => [
-      r.customer, r.customerCode, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+      r.customer, r.customerCode, r.phone, r.address, r.branch, r.salesPerson,
       r.productName, r.productCode, r.materialCode, r.orderNo, r.problem,
       r.note, r.status, r.priority, r.fioriNo || '', getRecordItems(r).map(i => [i.productName, i.productCode, i.materialCode, i.lotNo, i.fioriNo, i.problem].join(' ')).join(' ')
     ].join(' ').toLowerCase().includes(q));
@@ -2403,13 +2409,16 @@ function itemSummaryText(r) {
 function renderItemSummaryRows(r) {
   const items = getRecordItems(r);
   if (!items.length) return '';
+  const completedCount = items.filter(it => it.completed).length;
+  const headerInfo = completedCount > 0 ? `<div class="item-summary-status">${completedCount}/${items.length} kalem tamamlandı</div>` : '';
   return `
+    ${headerInfo}
     <div class="item-summary">
       <div class="item-summary-row item-summary-head"><div>No</div><div>Ürün</div><div>Ürün Kodu</div><div>Parça Kodu</div><div>FIORI No</div><div>Sorun</div></div>
       ${items.slice(0, 4).map((it, idx) => `
-        <div class="item-summary-row">
-          <div><strong>${idx + 1}</strong></div>
-          <div><strong>${esc(it.productName || '—')}</strong></div>
+        <div class="item-summary-row ${it.completed ? 'row-completed' : ''}">
+          <div><strong>${idx + 1}</strong>${it.completed ? ' <span style="color:#16A34A;font-size:14px;">✓</span>' : ''}</div>
+          <div><strong>${esc(it.productName || '—')}</strong>${it.completed ? ' <span class="completed-tag">TAMAMLANDI</span>' : ''}</div>
           <div>${esc(it.productCode || '—')}</div>
           <div>${esc(it.materialCode || '—')}</div>
           <div>${esc(it.fioriNo || '—')}</div>
@@ -2445,7 +2454,6 @@ function recordCard(r) {
 
       <div class="meta">
         <div><div class="k">Şube</div><div class="v">${esc(r.branch || '—')}</div></div>
-        <div><div class="k">Sorumlu</div><div class="v">${esc(r.responsible || '—')}</div></div>
         <div><div class="k">Satış danışmanı</div><div class="v">${esc(r.salesPerson || '—')}</div></div>
         <div><div class="k">Hale Servis No</div><div class="v">${esc(r.orderNo || '—')}</div></div>
         <div><div class="k">FIORI Bildirim No</div><div class="v">${esc(getRecordFioris(r).join(', ') || '—')}</div></div>
@@ -2550,7 +2558,7 @@ function renderReports() {
   const s = summarize();
   const topProducts = topBy(state.records, 'productName', 'Ürün yok');
   const topCustomers = topBy(state.records, 'customer', 'Müşteri yok');
-  const responsibleOpen = countBy(state.records.filter(r => r.openClosed !== 'Kapalı'), 'responsible', 'Belirtilmedi');
+  const salesPersonOpen = countBy(state.records.filter(r => r.openClosed !== 'Kapalı'), 'salesPerson', 'Belirtilmedi');
 
   document.getElementById('reportGrid').innerHTML = `
     <div class="card stat span-3"><div class="label">Toplam</div><div class="value">${s.total}</div><div class="sub">Tüm kayıt</div></div>
@@ -2561,7 +2569,7 @@ function renderReports() {
 
     <div class="card span-6"><h2 style="margin-bottom:12px;">Durum bazlı rapor</h2>${renderBars(countBy(state.records, 'status'))}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">Şube bazlı rapor</h2>${renderBars(countBy(state.records, 'branch', 'Belirtilmedi'))}</div>
-    <div class="card span-6"><h2 style="margin-bottom:12px;">Sorumlu personel açık kayıt</h2>${renderBars(responsibleOpen)}</div>
+    <div class="card span-6"><h2 style="margin-bottom:12px;">Satış danışmanı açık kayıt</h2>${renderBars(salesPersonOpen)}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">En çok servis açılan ürünler</h2>${renderBars(topProducts)}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">En çok servis açılan müşteriler</h2>${renderBars(topCustomers)}</div>
     <div class="card span-6"><h2 style="margin-bottom:12px;">Öncelik dağılımı</h2>${renderBars(countBy(state.records, 'priority', 'Normal'))}</div>
@@ -2786,11 +2794,11 @@ async function createRecord() {
     customer,
     customerCode: getVal('nCustomerCode'),
     phone: normalizePhoneDisplay(getVal('nPhone')),
-    address: getVal('nAddress'),
+    address: upperTr(getVal('nAddress')),
     branch: normalizeBranchName(getVal('nBranch')),
     montors: getMontorChecks('nMontorList'),
     salesPerson: getVal('nSalesPerson'),
-    responsible: getVal('nResponsible'),
+    responsible: getVal('nSalesPerson'),
     orderNo: getVal('nOrderNo'),  // boşsa backend üretir
     fioriNo: getVal('nFioriNo'),
     shipmentDate: getVal('nShipmentDate'),
@@ -2813,7 +2821,7 @@ async function createRecord() {
 
 function clearNewForm(showToast = true) {
   [
-    'nCustomer','nCustomerCode','nResponsible','nSalesPerson','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
+    'nCustomer','nCustomerCode','nSalesPerson','nPartOrderDate','nPartArrivalDate','nNote','nWorkOrders','nAddress',
     'iProductName','iProductCode','iMaterialCode','iLotNo','iProblem'
   ].forEach(id => setVal(id, ''));
   renderMontorChecks('nMontorList', []);
@@ -2912,6 +2920,27 @@ function clearEditItemForm() {
   if (cancelBtn) cancelBtn.style.display = 'none';
 }
 
+function toggleItemCompleted(index) {
+  const item = state.editItems[index];
+  if (!item) return;
+  if (item.completed) {
+    if (!confirm('Bu kalemin tamamlandı işaretini geri almak istiyor musun?')) return;
+    item.completed = false;
+    item.completedAt = '';
+  } else {
+    item.completed = true;
+    item.completedAt = new Date().toISOString();
+  }
+  renderEditItems();
+  // Tüm kalemler tamamlandıysa kullanıcıyı bilgilendir
+  const allDone = state.editItems.length > 0 && state.editItems.every(it => it.completed);
+  if (item.completed && allDone) {
+    toast('Tüm kalemler tamamlandı. Durumu "Tamamlandı"ya almak ister misin?', 'info');
+  } else {
+    toast(item.completed ? 'Kalem tamamlandı olarak işaretlendi' : 'Tamamlandı işareti geri alındı', 'success');
+  }
+}
+
 function editEditItem(index) {
   const item = state.editItems[index];
   if (!item) return;
@@ -2950,14 +2979,22 @@ function renderEditItems() {
     return;
   }
   wrap.innerHTML = state.editItems.map((it, idx) => `
-    <div class="service-item">
+    <div class="service-item ${it.completed ? 'item-completed' : ''}">
       <div class="service-item-no">${idx + 1}</div>
       <div>
-        <div class="service-item-title">${esc(it.productName || 'Ürün adı yok')}</div>
+        <div class="service-item-title">
+          ${esc(it.productName || 'Ürün adı yok')}
+          ${it.completed ? '<span class="item-completed-badge">✓ TAMAMLANDI</span>' : ''}
+        </div>
         <div class="service-item-sub">${esc([it.productCode && 'Ürün Kodu: ' + it.productCode, it.materialCode && 'Parça Kodu: ' + it.materialCode, it.lotNo && 'Lot: ' + it.lotNo, it.fioriNo && 'FIORI: ' + it.fioriNo].filter(Boolean).join(' · ') || 'Kod bilgisi yok')}</div>
         ${it.problem ? `<div class="service-item-problem"><strong>Sorun:</strong> ${esc(it.problem)}</div>` : ''}
+        ${it.completed && it.completedAt ? `<div style="font-size:11px;color:#16A34A;margin-top:4px;">Tamamlanma: ${esc(formatDateTime(it.completedAt))}</div>` : ''}
       </div>
       <div class="service-item-actions">
+        ${it.completed
+          ? `<button class="btn small" onclick="toggleItemCompleted(${idx})" type="button" title="Geri al">↻ Geri Al</button>`
+          : `<button class="btn small primary" onclick="toggleItemCompleted(${idx})" type="button" title="Tamamlandı işaretle">✓ Tamamlandı</button>`
+        }
         <button class="btn small edit-item" onclick="editEditItem(${idx})" type="button">Düzenle</button>
         <button class="btn small danger" onclick="removeEditItem(${idx})" type="button">Sil</button>
       </div>
@@ -2980,7 +3017,7 @@ async function saveEdit() {
     customer: upperTr(getVal('eCustomer')),
     customerCode: getVal('eCustomerCode'),
     phone: normalizePhoneDisplay(getVal('ePhone')),
-    address: getVal('eAddress'),
+    address: upperTr(getVal('eAddress')),
     branch: normalizeBranchName(getVal('eBranch')),
     montors: getMontorChecks('eMontorList'),
     productName: first.productName,
@@ -3336,10 +3373,11 @@ function printServiceForm(id, selectedItemIds) {
     const isSelected = selectedIds.indexOf(it.id) >= 0;
     const deferredNote = isSelected ? '' : `<div class="deferred-note">⏳ Bu kalem, sonraki servis ziyaretinde teslim edilecektir.</div>`;
     const rowClass = isSelected ? '' : 'deferred-row';
+    const completedBadge = it.completed ? '<span class="print-completed-badge">✓ TAMAMLANDI</span> ' : '';
     return `
-    <tr class="${rowClass}">
-      <td class="num">${idx + 1}</td>
-      <td>${deferredNote}<strong>${esc(it.productName || '—')}</strong>${hasPrintValue(it.lotNo) ? `<br><span>Lot: ${esc(it.lotNo)}</span>` : ''}</td>
+    <tr class="${rowClass} ${it.completed ? 'print-row-completed' : ''}">
+      <td class="num">${idx + 1}${it.completed ? ' ✓' : ''}</td>
+      <td>${deferredNote}${completedBadge}<strong>${esc(it.productName || '—')}</strong>${hasPrintValue(it.lotNo) ? `<br><span>Lot: ${esc(it.lotNo)}</span>` : ''}</td>
       <td>${esc(it.productCode || '—')}</td>
       <td>${esc(it.materialCode || '—')}</td>
       <td>${esc(it.fioriNo || '—')}</td>
@@ -3382,6 +3420,8 @@ function printServiceForm(id, selectedItemIds) {
       .print-work-orders { margin:0; padding:0 0 0 14px; font-size:10.5px; color:#7F1D1D; line-height:1.55; font-weight:600; }
       .print-work-orders li { margin-bottom:3px; padding-left:4px; }
       .deferred-row { background:#FFFBEB !important; }
+      .print-row-completed { background:#F0FDF4 !important; }
+      .print-completed-badge { display:inline-block; background:#16A34A; color:white; font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; margin-right:4px; letter-spacing:0.3px; }
       .deferred-row td { opacity:0.85; }
       .deferred-note { background:#F59E0B; color:#FFFFFF; padding:3px 8px; border-radius:4px; font-size:9.5px; font-weight:700; margin-bottom:4px; display:inline-block; letter-spacing:0.2px; }
       .print-items th { background:#284A73; color:#fff; padding:5px 5px; text-align:left; font-size:8px; letter-spacing:.2px; }
@@ -3458,12 +3498,12 @@ function printServiceForm(id, selectedItemIds) {
 
 function exportCsv() {
   const headers = [
-    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Adres','Şube','Satış Danışmanı','Sorumlu',
+    'Kayıt Tarihi','Son Güncelleme','Müşteri','Telefon','Adres','Şube','Satış Danışmanı',
     'Ürün','Ürün Kodu','Parça Kodu','Hale Servis No','FIORI Bildirim No','Lot No','Ürün Kurulum Tarihi','Yedek Parça Sipariş Tarihi',
     'Yedek Parça Termin Tarihi','Teslim Tarihi','Durum','Öncelik','Açık/Kapalı','Sorun','Not'
   ];
   const rows = state.records.map(r => [
-    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson, r.responsible,
+    formatDateTime(r.createdAt), formatDateTime(r.updatedAt), r.customer, r.phone, r.address, r.branch, r.salesPerson,
     r.productName, r.productCode, r.materialCode, r.orderNo, getRecordFioris(r).join('; '), r.lotNo, formatDate(r.shipmentDate), formatDate(r.partOrderDate),
     formatDate(r.partArrivalDate), formatDate(r.deliveryDate), r.status, r.priority, r.openClosed, r.problem, r.note
   ]);
