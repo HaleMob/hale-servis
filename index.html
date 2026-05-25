@@ -1698,7 +1698,21 @@ function getRecordFioris(r) {
 
 
 
+// Google Sheets bazı değerleri (#ERROR!, #VALUE! vb.) hücre hatası olarak döndürebilir.
+// Bu değerleri boş stringe çeviriyoruz.
+const SHEETS_ERROR_RE = /^#[A-Z\/0-9]+!?$/;
+function sanitizeSheetsErrors(record) {
+  ['phone','productName','productCode','materialCode','lotNo','problem','note','address',
+   'orderNo','fioriNo','salesPerson','montors','responsible','workOrders'].forEach(k => {
+    if (typeof record[k] === 'string' && SHEETS_ERROR_RE.test(record[k].trim())) {
+      record[k] = '';
+    }
+  });
+  return record;
+}
+
 function syncLegacyFields(record) {
+  sanitizeSheetsErrors(record);
   const first = getRecordItems(record)[0] || normalizeServiceItem();
   record.items = getRecordItems(record);
   record.productName = first.productName || '';
@@ -2423,7 +2437,7 @@ function recordCard(r) {
         <div style="flex:1;min-width:0;">
           <div class="customer-line">
             <span class="customer-name">${esc(r.customer || 'Müşteri yok')}${r.customerCode ? ' <span style="font-size:11px;color:#8899aa;font-weight:400;">[' + esc(r.customerCode) + ']</span>' : ''}</span>
-            ${r.phone ? `<span class="customer-phone">${esc(r.phone)}</span>` : ''}
+            ${r.phone ? `<span class="customer-phone">${esc(normalizePhoneDisplay(r.phone))}</span>` : ''}
           </div>
           <div class="product-line"><strong>${esc(itemSummaryText(r))}</strong></div>
         </div>
@@ -2778,7 +2792,7 @@ async function createRecord() {
   const record = makeRecord({
     customer,
     customerCode: getVal('nCustomerCode'),
-    phone: normalizePhoneDisplay(getVal('nPhone')),
+    phone: normalizePhoneForWhatsapp(getVal('nPhone')),
     address: upperTr(getVal('nAddress')),
     branch: normalizeBranchName(getVal('nBranch')),
     montors: getMontorChecks('nMontorList'),
@@ -3001,7 +3015,7 @@ async function saveEdit() {
   const patch = {
     customer: upperTr(getVal('eCustomer')),
     customerCode: getVal('eCustomerCode'),
-    phone: normalizePhoneDisplay(getVal('ePhone')),
+    phone: normalizePhoneForWhatsapp(getVal('ePhone')),
     address: upperTr(getVal('eAddress')),
     branch: normalizeBranchName(getVal('eBranch')),
     montors: getMontorChecks('eMontorList'),
