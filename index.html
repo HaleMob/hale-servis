@@ -1484,9 +1484,9 @@ const CHANGELOG = [
     date: '25.05.2026',
     label: 'Mayıs 2026 Güncellemesi',
     entries: [
-      { type: 'fix',     text: 'Yeni servis kaydı açılırken telefon numarasının "#ERROR!" olarak görünmesi sorunu giderildi.' },
-      { type: 'fix',     text: 'Google Sheets\'ten gelen hatalı veri değerleri (#ERROR!, #VALUE! vb.) artık otomatik olarak temizleniyor.' },
-      { type: 'new',     text: 'Bu güncelleme bildirimi eklendi — yeniliklerden haberdar olmak için her zaman topbar\'daki "🆕 Yenilikler" butonuna tıklayabilirsiniz.' },
+      { type: 'new',     text: 'Güncelleme bildirimi eklendi! Artık her yeni sürümde bu pencere otomatik açılacak. Daha önce gördükten sonra tekrar açmak için topbar\'daki "🆕 Yenilikler" butonunu kullanabilirsiniz.' },
+      { type: 'fix',     text: 'Yeni servis kaydı oluştururken telefon numarasının "#ERROR!" olarak görünmesi sorunu giderildi.' },
+      { type: 'fix',     text: 'Google Sheets\'ten gelen bozuk veri değerleri (#ERROR!, #VALUE! vb.) artık otomatik temizleniyor.' },
     ]
   }
 ];
@@ -2301,7 +2301,7 @@ async function boot() {
     // Butonu vurgula (nokta efekti)
     const _btn = document.getElementById('changelogBtn');
     if (_btn) _btn.style.outline = '2px solid #F59E0B';
-    setTimeout(() => showChangelog(false), 1200);
+    setTimeout(() => showChangelog(false), 800);
   }
 }
 

@@ -2,7 +2,7 @@
 // Sayfayı önbelleğe alır, internet kesilse bile uygulama açılır.
 // Veri Apps Script üzerinden geldiği için her açılışta tazedir.
 
-const CACHE_NAME = 'hale-servis-v1';
+const CACHE_NAME = 'hale-servis-v2';
 const CORE_ASSETS = [
   './',
   './index.html',
