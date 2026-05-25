@@ -920,6 +920,20 @@
   </div>
 </div>
 
+<!-- YENİLİKLER MODAL -->
+<div id="changelogModal" class="modal">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-head">
+      <h2 style="margin:0;">🆕 Yenilikler</h2>
+      <button class="btn" onclick="closeChangelog()">Kapat</button>
+    </div>
+    <div id="changelogContent" style="max-height:65vh;overflow-y:auto;padding-right:4px;"></div>
+    <div style="display:flex;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--line);padding-top:14px;">
+      <button class="btn primary" onclick="closeChangelog()">Anladım ✓</button>
+    </div>
+  </div>
+</div>
+
 <div class="print-only" id="printArea"></div>
 
 <div class="app">
@@ -934,7 +948,7 @@
     </div>
     <div class="top-actions">
       <button class="btn" onclick="DB.refresh(false)" title="Sunucudan yeniden çek">↻ Tazele</button>
-      
+      <button class="btn" onclick="showChangelog(true)" title="Yenilikler ve güncelleme notları" id="changelogBtn">🆕 Yenilikler</button>
       <button class="btn primary role-write" onclick="switchTab('yeni')">+ Yeni Servis</button>
     </div>
   </div>
@@ -1459,6 +1473,65 @@ function normalizeBranchList(list) {
 
 function normalizeRecordBranches(records) {
   return (Array.isArray(records) ? records : []).map(r => ({ ...r, branch: normalizeBranchName(r.branch) }));
+}
+
+// ============= YENİLİKLER / CHANGELOG =============
+// Yeni güncelleme eklerken en üste yeni bir nesne ekle.
+// type: 'new' (yeni özellik) | 'fix' (hata düzeltme) | 'improve' (iyileştirme)
+const CHANGELOG = [
+  {
+    version: '2026.05.25',
+    date: '25.05.2026',
+    label: 'Mayıs 2026 Güncellemesi',
+    entries: [
+      { type: 'fix',     text: 'Yeni servis kaydı açılırken telefon numarasının "#ERROR!" olarak görünmesi sorunu giderildi.' },
+      { type: 'fix',     text: 'Google Sheets\'ten gelen hatalı veri değerleri (#ERROR!, #VALUE! vb.) artık otomatik olarak temizleniyor.' },
+      { type: 'new',     text: 'Bu güncelleme bildirimi eklendi — yeniliklerden haberdar olmak için her zaman topbar\'daki "🆕 Yenilikler" butonuna tıklayabilirsiniz.' },
+    ]
+  }
+];
+const CHANGELOG_SEEN_KEY = 'hale_changelog_seen';
+
+function showChangelog(force = false) {
+  const lastSeen = localStorage.getItem(CHANGELOG_SEEN_KEY) || '';
+  const latest = CHANGELOG[0]?.version || '';
+  if (!force && lastSeen === latest) return;
+
+  const typeIcon  = { new: '✨', fix: '🔧', improve: '⚡' };
+  const typeLabel = { new: 'Yeni',        fix: 'Düzeltme',    improve: 'İyileştirme' };
+  const typeColor = { new: '#16A34A',     fix: '#B45309',      improve: '#1D4ED8' };
+  const typeBg    = { new: '#DCFCE7',     fix: '#FEF3C7',      improve: '#DBEAFE' };
+
+  document.getElementById('changelogContent').innerHTML = CHANGELOG.map((v, vi) => `
+    <div style="margin-bottom:${vi < CHANGELOG.length - 1 ? '24' : '4'}px;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+        <span style="background:var(--primary);color:white;padding:3px 12px;border-radius:999px;font-size:12px;font-weight:700;">${esc(v.label || v.version)}</span>
+        <span style="color:var(--muted);font-size:12px;">${esc(v.date)}</span>
+        ${vi === 0 ? '<span style="background:#FEF3C7;color:#92400E;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;">● Son</span>' : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px;">
+        ${v.entries.map(e => `
+          <div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:${typeBg[e.type] || 'var(--soft)'};border-radius:12px;border-left:3px solid ${typeColor[e.type] || 'var(--primary)'};">
+            <span style="font-size:15px;flex:0 0 auto;margin-top:1px;">${typeIcon[e.type] || '•'}</span>
+            <div>
+              <span style="font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.5px;color:${typeColor[e.type] || 'var(--muted)'};">${typeLabel[e.type] || ''}</span>
+              <div style="margin-top:2px;font-size:13px;line-height:1.5;color:var(--ink);">${esc(e.text)}</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  document.getElementById('changelogModal').classList.add('open');
+}
+
+function closeChangelog() {
+  localStorage.setItem(CHANGELOG_SEEN_KEY, CHANGELOG[0]?.version || '');
+  document.getElementById('changelogModal').classList.remove('open');
+  // Butondaki gösterge noktasını kaldır
+  const btn = document.getElementById('changelogBtn');
+  if (btn) btn.style.outline = '';
 }
 
 const state = {
@@ -2221,6 +2294,15 @@ async function boot() {
   renderAll();
   startAutoRefresh();
   toast('Hoş geldin · ' + (AUTH_USER.fullName || AUTH_USER.username), 'success');
+  // Daha önce görülmemiş sürüm varsa biraz bekleyip modalı aç
+  const _lastSeen = localStorage.getItem(CHANGELOG_SEEN_KEY) || '';
+  const _latest = CHANGELOG[0]?.version || '';
+  if (_lastSeen !== _latest) {
+    // Butonu vurgula (nokta efekti)
+    const _btn = document.getElementById('changelogBtn');
+    if (_btn) _btn.style.outline = '2px solid #F59E0B';
+    setTimeout(() => showChangelog(false), 1200);
+  }
 }
 
 // Otomatik yenileme: 15 sn'de bir sunucudan tazeleyelim
