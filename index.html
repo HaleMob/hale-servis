@@ -934,6 +934,29 @@
   </div>
 </div>
 
+<!-- İŞLEM GEÇMİŞİ NOTU MODAL (tüm roller kullanabilir) -->
+<div id="historyNoteModal" class="modal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-head">
+      <h2 style="margin:0;">📝 İşlem Geçmişi Notu</h2>
+      <button class="btn" onclick="closeHistoryNoteModal()">Kapat</button>
+    </div>
+    <div id="historyNoteSub" class="muted" style="font-size:13px;font-weight:700;margin-bottom:12px;"></div>
+    <div style="margin-bottom:12px;">
+      <label>Yeni Not</label>
+      <textarea id="historyNoteText" placeholder="Örn: Müşteri arandı, parça siparişi geçildi..." style="min-height:88px;"></textarea>
+    </div>
+    <div id="historyNoteError" style="display:none;background:#FEE2E2;color:#991B1B;padding:10px 12px;border-radius:8px;font-size:13px;margin-bottom:12px;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-bottom:14px;">
+      <button class="btn primary" onclick="submitHistoryNote()">Notu Kaydet</button>
+    </div>
+    <div style="border-top:1px dashed var(--line);padding-top:12px;">
+      <div class="muted" style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.3px;margin-bottom:8px;">Son işlem geçmişi</div>
+      <div id="historyNoteList" style="max-height:38vh;overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
 <div class="print-only" id="printArea"></div>
 
 <div class="app">
@@ -1484,6 +1507,7 @@ const CHANGELOG = [
     date: '02.06.2026',
     label: 'Haziran 2026 Güncellemesi',
     entries: [
+      { type: 'new',     text: 'Artık her kullanıcı (görüntüleyiciler dahil) herhangi bir kayda "📝 Not Ekle" butonuyla işlem geçmişi notu ekleyebilir. Düzenleme yetkisi gerekmez — not, kaydın geçmişine adınızla işlenir.' },
       { type: 'improve', text: 'Servis formu çıktısında teslimat adresi artık en üstte, çerçeveli ve büyük puntoyla kendi belirgin kutusunda gösteriliyor — sevkiyat ekibi adresi tek bakışta görebiliyor.' },
     ]
   },
@@ -1663,6 +1687,17 @@ const DB = {
       return true;
     } catch (e) {
       toast('Silme başarısız: ' + e.message, 'error');
+      return false;
+    }
+  },
+
+  // Her rol (readonly dahil) herhangi bir kayda işlem geçmişi notu ekleyebilir.
+  async addHistoryNote(id, note) {
+    try {
+      await apiCall('addHistoryNote', { id, note });
+      return true;
+    } catch (e) {
+      toast('Not eklenemedi: ' + e.message, 'error');
       return false;
     }
   },
@@ -2214,7 +2249,7 @@ function applyRolePermissions() {
     css += '.role-write, .role-manager-up, .role-admin { display:none !important; }';
     css += '.role-user-only { display:none !important; }';
     // Form alanlarını readonly yap
-    css += 'input:not(#loginUsername):not(#loginPassword):not(#cpOldPassword):not(#cpNewPassword):not(#cpNewPassword2), textarea, select { pointer-events:none; background:#F8FAFC !important; }';
+    css += 'input:not(#loginUsername):not(#loginPassword):not(#cpOldPassword):not(#cpNewPassword):not(#cpNewPassword2), textarea:not(#historyNoteText), select { pointer-events:none; background:#F8FAFC !important; }';
   } else if (role === 'user') {
     css += '.role-admin, .role-manager-up { display:none !important; }';
     // User rolü İş Emirleri alanını göremesin ve yazamasın
@@ -2318,8 +2353,9 @@ let _autoRefreshTimer = null;
 function startAutoRefresh() {
   if (_autoRefreshTimer) clearInterval(_autoRefreshTimer);
   _autoRefreshTimer = setInterval(() => {
-    // Düzenleme modalı açıkken yenileme yapma (kullanıcı yazdığını kaybetmesin)
+    // Düzenleme/not modalı açıkken yenileme yapma (kullanıcı yazdığını kaybetmesin)
     if (document.getElementById('editModal').classList.contains('open')) return;
+    if (document.getElementById('historyNoteModal').classList.contains('open')) return;
     DB.refresh(true);
   }, 15000);
 }
@@ -2556,6 +2592,7 @@ function recordCard(r) {
           ${state.settings.statuses.map(s => `<option value="${escAttr(s)}" ${s === r.status ? 'selected' : ''}>${esc(s)}</option>`).join('')}
         </select>
         <button class="btn small role-write" onclick="openEdit('${escAttr(r.id)}')">Düzenle</button>
+        <button class="btn small" onclick="openHistoryNoteModal('${escAttr(r.id)}')" title="Bu kayda işlem geçmişi notu ekle">📝 Not Ekle</button>
         <button class="btn small" onclick="copyWhatsappText('${escAttr(r.id)}')">WhatsApp Aç</button>
         <button class="btn small" onclick="printServiceForm('${escAttr(r.id)}')">Yazdır</button>
       </div>
@@ -3170,6 +3207,63 @@ function renderHistory() {
       ${h.note ? `<div style="margin-top:5px;">${esc(h.note)}</div>` : ''}
     </div>
   `).join('');
+}
+
+// ============= İŞLEM GEÇMİŞİ NOTU (tüm roller) =============
+
+let _historyNoteRecordId = null;
+
+function openHistoryNoteModal(id) {
+  const r = state.records.find(x => x.id === id);
+  if (!r) return;
+  _historyNoteRecordId = id;
+  document.getElementById('historyNoteSub').textContent =
+    `${r.customer || 'Müşteri yok'}${r.orderNo ? ' · ' + r.orderNo : ''}`;
+  setVal('historyNoteText', '');
+  document.getElementById('historyNoteError').style.display = 'none';
+  renderHistoryNoteList(r);
+  document.getElementById('historyNoteModal').classList.add('open');
+  setTimeout(() => document.getElementById('historyNoteText')?.focus(), 100);
+}
+
+function renderHistoryNoteList(r) {
+  const box = document.getElementById('historyNoteList');
+  const hist = (r.history || []).slice(0, 6);
+  if (!hist.length) {
+    box.innerHTML = `<div class="muted" style="font-size:12px;">Henüz işlem geçmişi yok.</div>`;
+    return;
+  }
+  box.innerHTML = hist.map(h => `
+    <div style="font-size:12px;padding:7px 0;border-bottom:1px solid var(--line);">
+      <div class="muted" style="font-size:11px;">${formatDateTime(h.at)} · ${esc(h.user || '')}</div>
+      <div style="margin-top:2px;">${esc(h.note || h.newStatus || '—')}</div>
+    </div>
+  `).join('');
+}
+
+function closeHistoryNoteModal() {
+  document.getElementById('historyNoteModal').classList.remove('open');
+  _historyNoteRecordId = null;
+}
+
+async function submitHistoryNote() {
+  const note = getVal('historyNoteText');
+  const errEl = document.getElementById('historyNoteError');
+  errEl.style.display = 'none';
+  if (!note) {
+    errEl.textContent = 'Lütfen bir not yazın.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const id = _historyNoteRecordId;
+  const ok = await DB.addHistoryNote(id, note);
+  if (!ok) return;
+  await DB.refresh(true);
+  // Modal hâlâ açıksa listeyi tazele ve alanı temizle
+  const r = state.records.find(x => x.id === id);
+  if (r) renderHistoryNoteList(r);
+  setVal('historyNoteText', '');
+  toast('Not eklendi', 'success');
 }
 
 function addProduct() {
