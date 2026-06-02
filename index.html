@@ -3433,7 +3433,6 @@ function printServiceForm(id, selectedItemIds) {
     ['Kayıt Tarihi', formatDateTime(r.createdAt)],
     ['Müşteri', r.customer],
     ['Telefon', r.phone],
-    ['Adres', r.address],
     ['Şube', r.branch],
     ['Satış Danışmanı', r.salesPerson],
     ['Hale Servis No', r.orderNo],
@@ -3489,6 +3488,9 @@ function printServiceForm(id, selectedItemIds) {
       .print-label { font-size:8.5px; color:#667085; font-weight:950; letter-spacing:.35px; text-transform:uppercase; margin-bottom:3px; }
       .print-main { font-size:16px; font-weight:950; color:#10243A; line-height:1.1; }
       .print-sub { margin-top:3px; font-size:9.5px; color:#667085; font-weight:700; line-height:1.25; }
+      .print-address-box { border:2px solid #284A73; border-radius:8px; padding:7px 12px; margin-bottom:7px; background:#EAF1F8; display:flex; align-items:baseline; gap:10px; }
+      .print-address-label { font-size:9px; color:#284A73; font-weight:950; letter-spacing:.4px; text-transform:uppercase; white-space:nowrap; flex:0 0 auto; }
+      .print-address-text { font-size:13.5px; font-weight:800; color:#10243A; line-height:1.3; overflow-wrap:anywhere; }
       .print-table { width:100%; border-collapse:separate; border-spacing:0; font-size:9px; border:1px solid #DDE5EF; border-radius:9px; overflow:hidden; table-layout:fixed; margin-bottom:7px; }
       .print-table tr:nth-child(even) td { background:#FBFCFE; }
       .print-table td { border-bottom:1px solid #DDE5EF; padding:4px 6px; vertical-align:top; line-height:1.15; overflow-wrap:anywhere; }
@@ -3535,6 +3537,11 @@ function printServiceForm(id, selectedItemIds) {
         <div class="print-box"><div class="print-label">Müşteri Bilgisi</div><div class="print-main">${esc(r.customer || '—')}</div><div class="print-sub">Telefon: ${esc(r.phone || '—')} · Şube: ${esc(r.branch || '—')}</div></div>
         <div class="print-box"><div class="print-label">Servis Kalem Özeti</div><div class="print-main">${items.length} Ürün / ${items.filter(i => i.materialCode).length} Parça</div></div>
       </div>
+      ${hasPrintValue(r.address) ? `
+        <div class="print-address-box">
+          <span class="print-address-label">📍 Teslimat Adresi</span>
+          <span class="print-address-text">${esc(r.address)}</span>
+        </div>` : ''}
       ${(r.priority === 'Acil' || r.priority === 'Kritik') ? `
         <div style="border:3px solid #dc2626;background:#fef2f2;padding:10px 16px;margin-bottom:12px;border-radius:8px;display:flex;align-items:center;gap:12px;">
           <span style="font-size:28px;font-weight:900;color:#dc2626;letter-spacing:1px;">⚠ ${esc(r.priority.toUpperCase())}</span>
